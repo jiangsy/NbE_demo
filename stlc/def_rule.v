@@ -2,136 +2,102 @@ Require Import Coq.Program.Equality.
 Require Import Coq.Lists.List.
 Require Import Lia.
 
+Require Import common.prop_as_core.
+Require Import common.prop_as_unscoped.
 Require Import nbe.stlc.def_as2.
 
 Declare Scope full_scope.
 Delimit Scope full_scope with F.
 
-Reserved Notation "⊢ Γ" 
-  (at level 55, Γ at next level, no associativity).
-Reserved Notation "Γ ⊢ t : T"
+Import SubstNotations.
+Import UnscopedNotations.
+
+Definition ctx := list typ.
+
+Inductive lookup : nat -> typ -> ctx -> Prop :=
+| lookup_here : forall T Γ, 
+  lookup 0 T (T :: Γ)
+| lookup_there : forall n S T Γ,
+  lookup n T Γ ->
+  lookup (1 + n) T (S :: Γ).
+
+Notation " n : T ∈ Γ " := (lookup n T Γ)
+  (at level 55, T at next level, no associativity).
+
+Notation "S → T" := (typ_arr S T)
+  (at level 54, right associativity).
+
+Notation "'λ' t" := (exp_abs t)
+  (at level 55). 
+
+Notation "r ▫ s" := (exp_app r s)
+  (at level 53, left associativity).
+
+Reserved Notation "Γ ⊢ t : T" 
   (at level 55, t at next level, no associativity).
-Reserved Notation  "Γ ⊢ t ≈ t' : T" 
+Inductive wf_exp : ctx -> exp -> typ -> Prop := 
+  | wf_exp_v : forall Γ i T,
+    nth_error Γ i = Some T ->
+    Γ ⊢ (exp_var i) : T
+  | wf_exp_abs : forall Γ S T t ,
+    (S :: Γ) ⊢ t : T ->
+    Γ ⊢ (exp_abs t) : S → T
+  | wf_exp_app : forall Γ r s S T,
+    Γ ⊢ r : S → T ->
+    Γ ⊢ s : S ->
+    Γ ⊢ (exp_app r s) : T
+where "Γ ⊢ t : T" := (wf_exp Γ t T).
+
+Inductive Ne : Set :=
+  | ne_v (vi : nat)
+  | ne_app (u : Ne) (v : Nf)
+  | ne_if (u : Nf) (v1 v2 : Nf)
+with Nf : Set :=
+  | nf_ne (u : Ne)
+  | nf_abs (v : Nf)
+  | nf_true
+  | nf_false.
+
+Reserved Notation "Γ ⊢ t ≈ t' : T"
   (at level 55, t at next level, t' at next level, no associativity).
-Inductive WfCtx : Ctx -> Prop :=
-| wf_ctx_nil : ⊢ nil
-| wf_ctx_cons : forall Γ T i,
-  ⊢ Γ ->
-  Γ ⊢ T : (𝕊 i) ->
-  ⊢ (T :: Γ)
-with WfExp : Ctx -> Exp -> Exp -> Prop :=
-| typing_nat : forall Γ i,
-  ⊢ Γ ->
-  Γ ⊢ exp_nat : (𝕊 i)
-| typing_set : forall Γ i,
-  ⊢ Γ ->
-  Γ ⊢ (𝕊 i) : (exp_set (1 + i))
-| typing_pi : forall Γ S T i,
-  Γ ⊢ S : 𝕊 i ->
-  (S :: Γ) ⊢ T : 𝕊 i ->
-  Γ ⊢ exp_pi S T : 𝕊 i
-| typing_var : forall Γ n T,
-  ⊢ Γ ->
-  n : T ∈ Γ ->
-  Γ ⊢ (exp_var n) : T
-| typing_zero : forall Γ,
-  ⊢ Γ ->
-  Γ ⊢ exp_zero : exp_nat
-| typing_suc : forall Γ t,
-  Γ ⊢ t : exp_nat ->
-  Γ ⊢ (exp_suc t) : exp_nat
-| typing_rec : forall Γ tz ts tn T i,
-  (ℕ :: Γ) ⊢ T : 𝕊 i ->
-  Γ ⊢ tz : T [| exp_zero ] ->
-  (T :: ℕ :: Γ) ⊢ ts : ( T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ) ->
-  Γ ⊢ tn : ℕ ->
-  Γ ⊢ exp_rec T tz ts tn : T [| tn ]
-| typing_abs : forall Γ t S T i,
-  Γ ⊢ S : 𝕊 i ->
-  (S :: Γ) ⊢ t : T ->
-  Γ ⊢ (exp_abs t) : (exp_pi S T) 
-| typing_app : forall Γ r s S T i,
-  Γ ⊢ S : 𝕊 i ->
-  (S :: Γ) ⊢ T : 𝕊 i ->
-  Γ ⊢ r : exp_pi S T ->
-  Γ ⊢ s : S ->
-  Γ ⊢ r ▫ s : T [| s ]
-| typing_subst : forall Γ Δ σ t T,
-  Γ ⊢s σ : Δ ->
-  Δ ⊢ t : T ->
-  Γ ⊢ t [ σ ] : T [ σ ]
-| typing_cumu : forall Γ T i,
-  Γ ⊢ T : 𝕊 i ->
-  Γ ⊢ T : exp_set (1 + i)
-| typing_conv : forall Γ t S T i,
-  Γ ⊢ t : T ->
-  Γ ⊢ T ≈ S : 𝕊 i ->
-  Γ ⊢ t : S
-with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
-| eq_exp_comp_pi : forall Γ S S' T T' i, 
-  Γ ⊢ S : 𝕊 i ->
-  Γ ⊢ S ≈ S' : 𝕊 i ->
-  (S :: Γ) ⊢ T ≈ T' : 𝕊 i ->
-  Γ ⊢ exp_pi S T ≈ exp_pi S' T' : 𝕊 i
-| eq_exp_comp_var : forall Γ n T,
-  ⊢ Γ ->
-  n : T ∈ Γ ->
-  Γ ⊢ exp_var n ≈ exp_var n : T
-| eq_exp_comp_zero : forall Γ,
-  ⊢ Γ ->
-  Γ ⊢ exp_zero ≈ exp_zero : ℕ
-| eq_exp_comp_suc : forall Γ t t',
-  Γ ⊢ t ≈ t' : ℕ ->
-  Γ ⊢ exp_suc t ≈ exp_suc t' : ℕ
-| eq_exp_comp_app : forall Γ r r' s s' S T i,
-  Γ ⊢ S : 𝕊 i ->
-  (S :: Γ) ⊢ T : 𝕊 i ->
-  Γ ⊢ r ≈ r' : exp_pi S T ->
-  Γ ⊢ s ≈ s' : S ->
-  Γ ⊢ r ▫ s ≈ r' ▫ s' : T [| s ]
-| eq_exp_comp_rec : forall Γ tz tz' ts ts' tn tn' T T' i,
-  (ℕ :: Γ) ⊢ T : 𝕊 i ->
-  Γ ⊢ tz ≈ tz' : T [| exp_zero ] ->
-  (T :: ℕ :: Γ) ⊢ ts ≈ ts' : T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ->
-  Γ ⊢ tn ≈ tn' : ℕ ->
-  (ℕ :: Γ) ⊢ T ≈ T' : 𝕊 i ->
-  Γ ⊢ exp_rec T tz ts tn ≈ exp_rec T' tz' ts' tn' : T [| tn ]
-| eq_exp_comp_abs : forall Γ t t' S T i,
-  Γ ⊢ S : 𝕊 i ->
-  (S :: Γ) ⊢ t ≈ t' : T ->
-  Γ ⊢ (λ t) ≈ (λ t') : exp_pi S T
-| eq_exp_beta_abs : forall Γ t s S T i,
-  Γ ⊢ S : 𝕊 i ->
-  (S :: Γ) ⊢ T : 𝕊 i ->
-  (S :: Γ) ⊢ t : T ->
-  Γ ⊢ s : S ->
-  Γ ⊢ (λ t) ▫ s ≈ t [| s ] : T [| s ] 
-| eq_exp_eta_abs : forall Γ t S T i,
-  Γ ⊢ S : 𝕊 i ->
-  (S :: Γ) ⊢ T : 𝕊 i ->
-  Γ ⊢ t : exp_pi S T ->
-  Γ ⊢ t ≈ exp_abs (t [ ↑ ] ▫ (exp_var 0)) : exp_pi S T
-| eq_exp_conv : forall Γ t t' T T' i,
-  Γ ⊢ t ≈ t' : T ->
-  Γ ⊢ T ≈ T' : 𝕊 i ->
-  Γ ⊢ t ≈ t' : T'
-| eq_exp_cumu : forall Γ T T' i,
-  Γ ⊢ T ≈ T' : 𝕊 i ->
-  Γ ⊢ T ≈ T' : exp_set (1 + i)
-| eq_exp_sym : forall Γ t t' T,
-  Γ ⊢ t ≈ t' : T ->
-  Γ ⊢ t' ≈ t : T
-| eq_exp_trans : forall Γ t1 t2 t3 T,
-  Γ ⊢ t1 ≈ t2 : T ->
-  Γ ⊢ t2 ≈ t3 : T ->
-  Γ ⊢ t1 ≈ t3 : T
-where "⊢ Γ" := (WfCtx Γ) : full_scope and
-      "Γ ⊢ t : T" := (WfExp Γ t T) : full_scope and 
-      "Γ ⊢ t ≈ t' : T" := (EqExp Γ t t' T) : full_scope. 
+Inductive eq_exp : ctx -> exp -> exp -> typ -> Prop := 
+| exp_eq_beta_abs : forall Γ s t S T,
+    (S :: Γ) ⊢ t : T ->
+    Γ ⊢ s : S ->
+    Γ ⊢ exp_app (exp_abs t) s ≈ t [s..] : T
+| exp_eq_beta_if_true : forall Γ t1 t2 T,
+    Γ ⊢ exp_if exp_true t1 t2 ≈ t1 : T
+| exp_eq_beta_if_false : forall Γ t1 t2 T,
+    Γ ⊢ exp_if exp_false t1 t2 ≈ t2 : T
+| exp_eq_comp_true : forall Γ,
+    Γ ⊢ exp_true ≈ exp_true : typ_bool
+| exp_eq_comp_false : forall Γ,
+    Γ ⊢ exp_false ≈ exp_false : typ_bool
+| exp_eq_comp_if : forall Γ r r' s s' t t' T,
+    Γ ⊢ r ≈ r' : typ_bool ->
+    Γ ⊢ s ≈ s' : T ->
+    Γ ⊢ t ≈ t' : T ->
+    Γ ⊢ exp_if r s t ≈ exp_if r' s' t' : T
+| exp_eq_comp_var : forall Γ n T,
+    n : T ∈ Γ ->
+    Γ ⊢ exp_var n ≈ exp_var n : T
+| exp_eq_comp_app : forall Γ r r' s s' S T,
+    Γ ⊢ r ≈ r' : S → T ->
+    Γ ⊢ s ≈ s' : S ->
+    Γ ⊢ r ▫ s ≈ r' ▫ s' : T
+| exp_eq_symm : forall Γ t t' T,
+    Γ ⊢ t ≈ t' : T ->
+    Γ ⊢ t' ≈ t : T
+| exp_eq_trans : forall Γ t1 t2 t3 T,
+    Γ ⊢ t1 ≈ t2 : T ->
+    Γ ⊢ t2 ≈ t3 : T ->
+    Γ ⊢ t1 ≈ t3 : T
+| exp_eq_ext_xi : forall Γ t t' S T,
+    (S :: Γ) ⊢ t ≈ t' : T ->
+    Γ ⊢ (λ t) ≈ (λ t') : S → T
+| exp_eq_ext_eta : forall Γ t S T,
+    Γ ⊢ t : S → T ->
+    Γ ⊢ t ≈ (λ (t⟨↑⟩ ▫ (exp_var 0))) : S → T
+where "Γ ⊢ t ≈ t' : T" := (eq_exp Γ t t' T).
 
-Scheme wf_exp_ind := Induction for WfExp Sort Prop
-  with eq_exp_ind := Induction for EqExp Sort Prop.
-
-Combined Scheme wf_exp_eq_exp_mutind from wf_exp_ind, eq_exp_ind.
-
-#[local] Hint Constructors WfCtx WfExp EqExp : core.
+Print eq_exp.

@@ -9,7 +9,7 @@ Inductive exp : Type :=
   | exp_var : nat -> exp
   | exp_app : exp -> exp -> exp
   | exp_abs : exp -> exp
-  | exp_if : exp -> exp -> exp
+  | exp_if : exp -> exp -> exp -> exp
   | exp_true : exp
   | exp_false : exp.
 
@@ -26,11 +26,14 @@ Proof.
 exact (eq_trans eq_refl (ap (fun x => exp_abs x) H0)).
 Qed.
 
-Lemma congr_exp_if {s0 : exp} {s1 : exp} {t0 : exp} {t1 : exp} (H0 : s0 = t0)
-  (H1 : s1 = t1) : exp_if s0 s1 = exp_if t0 t1.
+Lemma congr_exp_if {s0 : exp} {s1 : exp} {s2 : exp} {t0 : exp} {t1 : exp}
+  {t2 : exp} (H0 : s0 = t0) (H1 : s1 = t1) (H2 : s2 = t2) :
+  exp_if s0 s1 s2 = exp_if t0 t1 t2.
 Proof.
-exact (eq_trans (eq_trans eq_refl (ap (fun x => exp_if x s1) H0))
-         (ap (fun x => exp_if t0 x) H1)).
+exact (eq_trans
+         (eq_trans (eq_trans eq_refl (ap (fun x => exp_if x s1 s2) H0))
+            (ap (fun x => exp_if t0 x s2) H1))
+         (ap (fun x => exp_if t0 t1 x) H2)).
 Qed.
 
 Lemma congr_exp_true : exp_true = exp_true.
@@ -53,7 +56,8 @@ Fixpoint ren_exp (xi_exp : nat -> nat) (s : exp) {struct s} : exp :=
   | exp_var s0 => exp_var (xi_exp s0)
   | exp_app s0 s1 => exp_app (ren_exp xi_exp s0) (ren_exp xi_exp s1)
   | exp_abs s0 => exp_abs (ren_exp (upRen_exp_exp xi_exp) s0)
-  | exp_if s0 s1 => exp_if (ren_exp xi_exp s0) (ren_exp xi_exp s1)
+  | exp_if s0 s1 s2 =>
+      exp_if (ren_exp xi_exp s0) (ren_exp xi_exp s1) (ren_exp xi_exp s2)
   | exp_true => exp_true
   | exp_false => exp_false
   end.
@@ -69,7 +73,9 @@ Fixpoint subst_exp (sigma_exp : nat -> exp) (s : exp) {struct s} : exp :=
   | exp_app s0 s1 =>
       exp_app (subst_exp sigma_exp s0) (subst_exp sigma_exp s1)
   | exp_abs s0 => exp_abs (subst_exp (up_exp_exp sigma_exp) s0)
-  | exp_if s0 s1 => exp_if (subst_exp sigma_exp s0) (subst_exp sigma_exp s1)
+  | exp_if s0 s1 s2 =>
+      exp_if (subst_exp sigma_exp s0) (subst_exp sigma_exp s1)
+        (subst_exp sigma_exp s2)
   | exp_true => exp_true
   | exp_false => exp_false
   end.
@@ -95,9 +101,9 @@ subst_exp sigma_exp s = s :=
   | exp_abs s0 =>
       congr_exp_abs
         (idSubst_exp (up_exp_exp sigma_exp) (upId_exp_exp _ Eq_exp) s0)
-  | exp_if s0 s1 =>
+  | exp_if s0 s1 s2 =>
       congr_exp_if (idSubst_exp sigma_exp Eq_exp s0)
-        (idSubst_exp sigma_exp Eq_exp s1)
+        (idSubst_exp sigma_exp Eq_exp s1) (idSubst_exp sigma_exp Eq_exp s2)
   | exp_true => congr_exp_true
   | exp_false => congr_exp_false
   end.
@@ -124,9 +130,10 @@ ren_exp xi_exp s = ren_exp zeta_exp s :=
       congr_exp_abs
         (extRen_exp (upRen_exp_exp xi_exp) (upRen_exp_exp zeta_exp)
            (upExtRen_exp_exp _ _ Eq_exp) s0)
-  | exp_if s0 s1 =>
+  | exp_if s0 s1 s2 =>
       congr_exp_if (extRen_exp xi_exp zeta_exp Eq_exp s0)
         (extRen_exp xi_exp zeta_exp Eq_exp s1)
+        (extRen_exp xi_exp zeta_exp Eq_exp s2)
   | exp_true => congr_exp_true
   | exp_false => congr_exp_false
   end.
@@ -154,9 +161,10 @@ subst_exp sigma_exp s = subst_exp tau_exp s :=
       congr_exp_abs
         (ext_exp (up_exp_exp sigma_exp) (up_exp_exp tau_exp)
            (upExt_exp_exp _ _ Eq_exp) s0)
-  | exp_if s0 s1 =>
+  | exp_if s0 s1 s2 =>
       congr_exp_if (ext_exp sigma_exp tau_exp Eq_exp s0)
         (ext_exp sigma_exp tau_exp Eq_exp s1)
+        (ext_exp sigma_exp tau_exp Eq_exp s2)
   | exp_true => congr_exp_true
   | exp_false => congr_exp_false
   end.
@@ -182,9 +190,10 @@ Fixpoint compRenRen_exp (xi_exp : nat -> nat) (zeta_exp : nat -> nat)
       congr_exp_abs
         (compRenRen_exp (upRen_exp_exp xi_exp) (upRen_exp_exp zeta_exp)
            (upRen_exp_exp rho_exp) (up_ren_ren _ _ _ Eq_exp) s0)
-  | exp_if s0 s1 =>
+  | exp_if s0 s1 s2 =>
       congr_exp_if (compRenRen_exp xi_exp zeta_exp rho_exp Eq_exp s0)
         (compRenRen_exp xi_exp zeta_exp rho_exp Eq_exp s1)
+        (compRenRen_exp xi_exp zeta_exp rho_exp Eq_exp s2)
   | exp_true => congr_exp_true
   | exp_false => congr_exp_false
   end.
@@ -214,9 +223,10 @@ Fixpoint compRenSubst_exp (xi_exp : nat -> nat) (tau_exp : nat -> exp)
       congr_exp_abs
         (compRenSubst_exp (upRen_exp_exp xi_exp) (up_exp_exp tau_exp)
            (up_exp_exp theta_exp) (up_ren_subst_exp_exp _ _ _ Eq_exp) s0)
-  | exp_if s0 s1 =>
+  | exp_if s0 s1 s2 =>
       congr_exp_if (compRenSubst_exp xi_exp tau_exp theta_exp Eq_exp s0)
         (compRenSubst_exp xi_exp tau_exp theta_exp Eq_exp s1)
+        (compRenSubst_exp xi_exp tau_exp theta_exp Eq_exp s2)
   | exp_true => congr_exp_true
   | exp_false => congr_exp_false
   end.
@@ -257,9 +267,10 @@ ren_exp zeta_exp (subst_exp sigma_exp s) = subst_exp theta_exp s :=
       congr_exp_abs
         (compSubstRen_exp (up_exp_exp sigma_exp) (upRen_exp_exp zeta_exp)
            (up_exp_exp theta_exp) (up_subst_ren_exp_exp _ _ _ Eq_exp) s0)
-  | exp_if s0 s1 =>
+  | exp_if s0 s1 s2 =>
       congr_exp_if (compSubstRen_exp sigma_exp zeta_exp theta_exp Eq_exp s0)
         (compSubstRen_exp sigma_exp zeta_exp theta_exp Eq_exp s1)
+        (compSubstRen_exp sigma_exp zeta_exp theta_exp Eq_exp s2)
   | exp_true => congr_exp_true
   | exp_false => congr_exp_false
   end.
@@ -302,9 +313,10 @@ subst_exp tau_exp (subst_exp sigma_exp s) = subst_exp theta_exp s :=
       congr_exp_abs
         (compSubstSubst_exp (up_exp_exp sigma_exp) (up_exp_exp tau_exp)
            (up_exp_exp theta_exp) (up_subst_subst_exp_exp _ _ _ Eq_exp) s0)
-  | exp_if s0 s1 =>
+  | exp_if s0 s1 s2 =>
       congr_exp_if (compSubstSubst_exp sigma_exp tau_exp theta_exp Eq_exp s0)
         (compSubstSubst_exp sigma_exp tau_exp theta_exp Eq_exp s1)
+        (compSubstSubst_exp sigma_exp tau_exp theta_exp Eq_exp s2)
   | exp_true => congr_exp_true
   | exp_false => congr_exp_false
   end.
@@ -390,9 +402,10 @@ Fixpoint rinst_inst_exp (xi_exp : nat -> nat) (sigma_exp : nat -> exp)
       congr_exp_abs
         (rinst_inst_exp (upRen_exp_exp xi_exp) (up_exp_exp sigma_exp)
            (rinstInst_up_exp_exp _ _ Eq_exp) s0)
-  | exp_if s0 s1 =>
+  | exp_if s0 s1 s2 =>
       congr_exp_if (rinst_inst_exp xi_exp sigma_exp Eq_exp s0)
         (rinst_inst_exp xi_exp sigma_exp Eq_exp s1)
+        (rinst_inst_exp xi_exp sigma_exp Eq_exp s2)
   | exp_true => congr_exp_true
   | exp_false => congr_exp_false
   end.
