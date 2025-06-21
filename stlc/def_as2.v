@@ -9,7 +9,9 @@ Inductive exp : Type :=
   | exp_var : nat -> exp
   | exp_app : exp -> exp -> exp
   | exp_abs : exp -> exp
-  | exp_if : exp -> exp -> exp.
+  | exp_if : exp -> exp -> exp
+  | exp_true : exp
+  | exp_false : exp.
 
 Lemma congr_exp_app {s0 : exp} {s1 : exp} {t0 : exp} {t1 : exp}
   (H0 : s0 = t0) (H1 : s1 = t1) : exp_app s0 s1 = exp_app t0 t1.
@@ -31,6 +33,16 @@ exact (eq_trans (eq_trans eq_refl (ap (fun x => exp_if x s1) H0))
          (ap (fun x => exp_if t0 x) H1)).
 Qed.
 
+Lemma congr_exp_true : exp_true = exp_true.
+Proof.
+exact (eq_refl).
+Qed.
+
+Lemma congr_exp_false : exp_false = exp_false.
+Proof.
+exact (eq_refl).
+Qed.
+
 Lemma upRen_exp_exp (xi : nat -> nat) : nat -> nat.
 Proof.
 exact (up_ren xi).
@@ -42,6 +54,8 @@ Fixpoint ren_exp (xi_exp : nat -> nat) (s : exp) {struct s} : exp :=
   | exp_app s0 s1 => exp_app (ren_exp xi_exp s0) (ren_exp xi_exp s1)
   | exp_abs s0 => exp_abs (ren_exp (upRen_exp_exp xi_exp) s0)
   | exp_if s0 s1 => exp_if (ren_exp xi_exp s0) (ren_exp xi_exp s1)
+  | exp_true => exp_true
+  | exp_false => exp_false
   end.
 
 Lemma up_exp_exp (sigma : nat -> exp) : nat -> exp.
@@ -56,6 +70,8 @@ Fixpoint subst_exp (sigma_exp : nat -> exp) (s : exp) {struct s} : exp :=
       exp_app (subst_exp sigma_exp s0) (subst_exp sigma_exp s1)
   | exp_abs s0 => exp_abs (subst_exp (up_exp_exp sigma_exp) s0)
   | exp_if s0 s1 => exp_if (subst_exp sigma_exp s0) (subst_exp sigma_exp s1)
+  | exp_true => exp_true
+  | exp_false => exp_false
   end.
 
 Lemma upId_exp_exp (sigma : nat -> exp) (Eq : forall x, sigma x = exp_var x)
@@ -82,6 +98,8 @@ subst_exp sigma_exp s = s :=
   | exp_if s0 s1 =>
       congr_exp_if (idSubst_exp sigma_exp Eq_exp s0)
         (idSubst_exp sigma_exp Eq_exp s1)
+  | exp_true => congr_exp_true
+  | exp_false => congr_exp_false
   end.
 
 Lemma upExtRen_exp_exp (xi : nat -> nat) (zeta : nat -> nat)
@@ -109,6 +127,8 @@ ren_exp xi_exp s = ren_exp zeta_exp s :=
   | exp_if s0 s1 =>
       congr_exp_if (extRen_exp xi_exp zeta_exp Eq_exp s0)
         (extRen_exp xi_exp zeta_exp Eq_exp s1)
+  | exp_true => congr_exp_true
+  | exp_false => congr_exp_false
   end.
 
 Lemma upExt_exp_exp (sigma : nat -> exp) (tau : nat -> exp)
@@ -137,6 +157,8 @@ subst_exp sigma_exp s = subst_exp tau_exp s :=
   | exp_if s0 s1 =>
       congr_exp_if (ext_exp sigma_exp tau_exp Eq_exp s0)
         (ext_exp sigma_exp tau_exp Eq_exp s1)
+  | exp_true => congr_exp_true
+  | exp_false => congr_exp_false
   end.
 
 Lemma up_ren_ren_exp_exp (xi : nat -> nat) (zeta : nat -> nat)
@@ -163,6 +185,8 @@ Fixpoint compRenRen_exp (xi_exp : nat -> nat) (zeta_exp : nat -> nat)
   | exp_if s0 s1 =>
       congr_exp_if (compRenRen_exp xi_exp zeta_exp rho_exp Eq_exp s0)
         (compRenRen_exp xi_exp zeta_exp rho_exp Eq_exp s1)
+  | exp_true => congr_exp_true
+  | exp_false => congr_exp_false
   end.
 
 Lemma up_ren_subst_exp_exp (xi : nat -> nat) (tau : nat -> exp)
@@ -193,6 +217,8 @@ Fixpoint compRenSubst_exp (xi_exp : nat -> nat) (tau_exp : nat -> exp)
   | exp_if s0 s1 =>
       congr_exp_if (compRenSubst_exp xi_exp tau_exp theta_exp Eq_exp s0)
         (compRenSubst_exp xi_exp tau_exp theta_exp Eq_exp s1)
+  | exp_true => congr_exp_true
+  | exp_false => congr_exp_false
   end.
 
 Lemma up_subst_ren_exp_exp (sigma : nat -> exp) (zeta_exp : nat -> nat)
@@ -234,6 +260,8 @@ ren_exp zeta_exp (subst_exp sigma_exp s) = subst_exp theta_exp s :=
   | exp_if s0 s1 =>
       congr_exp_if (compSubstRen_exp sigma_exp zeta_exp theta_exp Eq_exp s0)
         (compSubstRen_exp sigma_exp zeta_exp theta_exp Eq_exp s1)
+  | exp_true => congr_exp_true
+  | exp_false => congr_exp_false
   end.
 
 Lemma up_subst_subst_exp_exp (sigma : nat -> exp) (tau_exp : nat -> exp)
@@ -277,6 +305,8 @@ subst_exp tau_exp (subst_exp sigma_exp s) = subst_exp theta_exp s :=
   | exp_if s0 s1 =>
       congr_exp_if (compSubstSubst_exp sigma_exp tau_exp theta_exp Eq_exp s0)
         (compSubstSubst_exp sigma_exp tau_exp theta_exp Eq_exp s1)
+  | exp_true => congr_exp_true
+  | exp_false => congr_exp_false
   end.
 
 Lemma renRen_exp (xi_exp : nat -> nat) (zeta_exp : nat -> nat) (s : exp) :
@@ -363,6 +393,8 @@ Fixpoint rinst_inst_exp (xi_exp : nat -> nat) (sigma_exp : nat -> exp)
   | exp_if s0 s1 =>
       congr_exp_if (rinst_inst_exp xi_exp sigma_exp Eq_exp s0)
         (rinst_inst_exp xi_exp sigma_exp Eq_exp s1)
+  | exp_true => congr_exp_true
+  | exp_false => congr_exp_false
   end.
 
 Lemma rinstInst'_exp (xi_exp : nat -> nat) (s : exp) :

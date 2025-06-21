@@ -15,7 +15,7 @@ else
 endif
 
 SYSTEMS := ptt stlc systemt
-IGNORE_DIRS := test
+IGNORE_DIRS := ""
 
 # https://stackoverflow.com/questions/3774568/makefile-issue-smart-way-to-scan-directory-tree-for-c-files
 rwildcard=$(wildcard $(addsuffix $2, $1))$(foreach d,$(wildcard $(addsuffix *, $1)),$(call rwildcard,$d/,$2))
@@ -28,18 +28,6 @@ AUTOSUBST2_OUTS := $(addsuffix def_as2.v,${ALL_SIG_DIRS})
 
 autosubst2: ${AUTOSUBST2_OUTS}
 
-# %/def_as2.v %/prop_as_core.v %/prop_as_unscoped.v: %/language.sig
-# 	autosubst $*/language.sig -o $@ -s ucoq
-# 	# rename files and modify imports
-# 	mv $*/core.v $*/prop_as_core.v
-# 	mv $*/unscoped.v $*/prop_as_unscoped.v
-# 	sed -e "s/Require Import core./Require Import $(subst /,.,$*).prop_as_core./g" ${SED_FLAG}  $*/prop_as_unscoped.v
-#   sed -e "s/Require Import core unscoped./Require Import $(subst /,.,$*).prop_as_core $(subst /,.,$*).prop_as_unscoped./g" ${SED_FLAG} $*/def_as2.v
-# 	# fix warning about % in Arguments in Coq 8.19
-# 	sed -e "/Arguments/ s/%/%_/g" ${SED_FLAG} $*/prop_as_unscoped.v
-# 	# modify constructor names, subst "var_*" intro "*_var" except "var_zero"
-# 	perl -i -pe 's/\bvar_((?!zero\b)[a-zA-Z0-9]+)/\1_var/g' $*/def_as2.v
-
 %/def_as2.v: %/language.sig
 	autosubst $*/language.sig -o $@ -s ucoq
 	rm $*/core.v $*/unscoped.v
@@ -48,6 +36,7 @@ autosubst2: ${AUTOSUBST2_OUTS}
 	perl -i -pe 's/\bvar_((?!zero\b)[a-zA-Z0-9]+)/\1_var/g' $*/def_as2.v
 
 # a hack to force makefile to detect source file changes
+# not sure if it's necessary
 .FILE_LIST : ${LNGEN_OUTS} FORCE
 	tree . -if -I ${IGNORE_DIRS} | grep -E "v$$" | sort -s > .FILE_LIST.tmp
 	diff $@ .FILE_LIST.tmp || cp .FILE_LIST.tmp $@
