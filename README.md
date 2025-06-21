@@ -14,3 +14,26 @@ The proof of System T is in `./systemt/`.
 
 `./stlc` contains unfinished work for replacing explicit substitutions with substitution-as-operations.
 
+### Dependency
+
+(Recommended): use `opam switch` to create a new opam environment.
+
+- `coq-8.19.2`
+
+```bash
+opam pin add coq 8.19.2
+```
+
+- [`CoqHammer`](https://github.com/lukaszcz/coqhammer) (tested on version 1.3.2)
+
+```bash
+opam repo add coq-released https://coq.inria.fr/opam/released
+opam install coq-hammer-tactics
+```
+
+- [`autosubst-ocaml`](https://github.com/uds-psl/autosubst-ocaml) (tested on version 1.1)
+
+```bash
+opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
+opam install coq-autosubst-ocaml
+```
