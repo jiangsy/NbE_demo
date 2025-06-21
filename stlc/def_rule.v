@@ -14,16 +14,6 @@ Import UnscopedNotations.
 
 Definition ctx := list typ.
 
-Inductive lookup : nat -> typ -> ctx -> Prop :=
-| lookup_here : forall T Γ, 
-  lookup 0 T (T :: Γ)
-| lookup_there : forall n S T Γ,
-  lookup n T Γ ->
-  lookup (1 + n) T (S :: Γ).
-
-Notation " n : T ∈ Γ " := (lookup n T Γ)
-  (at level 55, T at next level, no associativity).
-
 Notation "S → T" := (typ_arr S T)
   (at level 54, right associativity).
 
@@ -36,9 +26,9 @@ Notation "r ▫ s" := (exp_app r s)
 Reserved Notation "Γ ⊢ t : T" 
   (at level 55, t at next level, no associativity).
 Inductive wf_exp : ctx -> exp -> typ -> Prop := 
-  | wf_exp_v : forall Γ i T,
-    nth_error Γ i = Some T ->
-    Γ ⊢ (exp_var i) : T
+  | wf_exp_v : forall Γ n T,
+    nth_error Γ n = Some T ->
+    Γ ⊢ (exp_var n) : T
   | wf_exp_abs : forall Γ S T t ,
     (S :: Γ) ⊢ t : T ->
     Γ ⊢ (exp_abs t) : S → T
@@ -48,13 +38,13 @@ Inductive wf_exp : ctx -> exp -> typ -> Prop :=
     Γ ⊢ (exp_app r s) : T
 where "Γ ⊢ t : T" := (wf_exp Γ t T).
 
-Inductive Ne : Set :=
+Inductive ne : Set :=
   | ne_v (vi : nat)
-  | ne_app (u : Ne) (v : Nf)
-  | ne_if (u : Nf) (v1 v2 : Nf)
-with Nf : Set :=
-  | nf_ne (u : Ne)
-  | nf_abs (v : Nf)
+  | ne_app (u : ne) (v : nf)
+  | ne_if (u : nf) (v1 v2 : nf)
+with nf : Set :=
+  | nf_ne (u : ne)
+  | nf_abs (v : nf)
   | nf_true
   | nf_false.
 
@@ -79,7 +69,7 @@ Inductive eq_exp : ctx -> exp -> exp -> typ -> Prop :=
     Γ ⊢ t ≈ t' : T ->
     Γ ⊢ exp_if r s t ≈ exp_if r' s' t' : T
 | exp_eq_comp_var : forall Γ n T,
-    n : T ∈ Γ ->
+    nth_error Γ n = Some T ->
     Γ ⊢ exp_var n ≈ exp_var n : T
 | exp_eq_comp_app : forall Γ r r' s s' S T,
     Γ ⊢ r ≈ r' : S → T ->
@@ -100,4 +90,19 @@ Inductive eq_exp : ctx -> exp -> exp -> typ -> Prop :=
     Γ ⊢ t ≈ (λ (t⟨↑⟩ ▫ (exp_var 0))) : S → T
 where "Γ ⊢ t ≈ t' : T" := (eq_exp Γ t t' T).
 
-Print eq_exp.
+Fixpoint nf_to_exp (w : nf) : exp :=
+  match w with 
+  | nf_abs w' => exp_abs (nf_to_exp w')
+  | nf_ne u => ne_to_exp u
+  | nf_true => exp_true
+  | nf_false => exp_false
+  end
+with ne_to_exp (u : ne) : exp :=
+  match u with
+  | ne_app u' w => exp_app (ne_to_exp u') (nf_to_exp w)
+  | ne_v n => exp_var n
+  | ne_if u' v1 v2 => exp_if (nf_to_exp u') (nf_to_exp v1) (nf_to_exp v2)
+  end.
+
+Coercion nf_to_exp : nf >-> exp.
+Coercion ne_to_exp : ne >-> exp.
