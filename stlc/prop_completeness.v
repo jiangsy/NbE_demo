@@ -99,3 +99,29 @@ Proof.
   unfold sem_typ_top in H3. specialize (H3 (1 + n)).
   hauto ctrs:rnf_rel limit:100.
 Qed.
+
+Definition realize (T : typ) (A : sem_typ) : Prop :=
+  (forall a a', A a a' -> dnf_reif T a ≈ dnf_reif T a' ∈ ⊤) /\
+  (forall e e', e ≈ e' ∈ ⊥ -> A (d_refl T e) (d_refl T e')).
+
+Notation "T ⊩ A" := (realize T A)
+  (at level 55, no associativity).
+
+Inductive sem_typ_bool : d -> d -> Prop :=
+  | sbool_true: sem_typ_bool d_true d_true
+  | sbool_false: sem_typ_bool d_false d_false
+  | sbool_ne : forall e e',
+      e ≈ e' ∈ ⊥ ->
+      sem_typ_bool (d_refl typ_bool e) (d_refl typ_bool e').
+
+Notation "a ≈ a' ∈ 'Bool'" := (sem_typ_bool a a')
+  (at level 55, a' at next level, no associativity).
+
+Lemma bool_realize_sem_bool : typ_bool ⊩ sem_typ_bool.
+Proof.
+  unfold realize. split; intros; try sauto limit:50.
+  - destruct H; unfold sem_typ_top; intros; 
+    try sauto limit:50.
+    + unfold sem_typ_bot in H. specialize (H n).
+      hauto limit:100 ctrs:rnf_rel. 
+Qed.
