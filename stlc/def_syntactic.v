@@ -54,7 +54,7 @@ Inductive eq_exp : ctx -> exp -> exp -> typ -> Prop :=
 | exp_eq_beta_abs : forall Γ s t S T,
     (S :: Γ) ⊢ t : T ->
     Γ ⊢ s : S ->
-    Γ ⊢ exp_app (exp_abs t) s ≈ t [s..] : T
+    Γ ⊢ exp_app (λ t) s ≈ t [s..] : T
 | exp_eq_beta_if_true : forall Γ t1 t2 T,
     Γ ⊢ exp_if exp_true t1 t2 ≈ t1 : T
 | exp_eq_beta_if_false : forall Γ t1 t2 T,
