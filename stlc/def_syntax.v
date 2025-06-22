@@ -1,10 +1,8 @@
-Require Import Coq.Program.Equality.
 Require Import Coq.Lists.List.
-Require Import Lia.
 
-Require Import common.prop_as_core.
-Require Import common.prop_as_unscoped.
-Require Import nbe.stlc.def_as2.
+Require Export common.prop_as_core.
+Require Export common.prop_as_unscoped.
+Require Export nbe.stlc.def_as2.
 
 Declare Scope full_scope.
 Delimit Scope full_scope with F.

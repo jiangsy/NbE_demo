@@ -3,8 +3,6 @@ Require Import Coq.Lists.List.
 From Hammer Require Import Tactics.
 From TLC Require Import LibTactics.
 
-Require Import nbe.stlc.def_syntax.
-Require Import nbe.stlc.def_nbe.
 Require Import nbe.stlc.prop_nbe.
 
 Definition sem_typ := d -> d -> Prop.
@@ -45,4 +43,59 @@ Lemma sem_typ_bot_var : forall i,
 Proof.
   intros. unfold sem_typ_bot.
   sauto limit:50.
+Qed.
+
+Lemma sem_typ_bot_app : forall e e' d d',
+  e ≈ e' ∈ ⊥ ->
+  d ≈ d' ∈ ⊤ ->
+  (dne_app e d) ≈ (dne_app e' d') ∈ ⊥.
+Proof.
+  intros. unfold sem_typ_bot in *. unfold sem_typ_top in *. 
+  hauto ctrs:rne_rel.
+Qed.
+
+Lemma sem_typ_top_ne : forall e e',
+  e ≈ e' ∈ ⊥ ->
+  dnf_reif typ_bool (d_refl typ_bool e) ≈ dnf_reif typ_bool (d_refl typ_bool e') ∈ ⊤.
+Proof.
+  intros. 
+  unfold sem_typ_top. unfold sem_typ_bot in *.
+  sauto limit:100.
+Qed.
+
+Lemma sem_bot_if : forall T e e' dt df dt' df',
+  e ≈ e' ∈ ⊥ ->
+  dt ≈ dt' ∈ ⊤ ->
+  df ≈ df' ∈ ⊤ ->
+  dne_if T e dt df ≈ dne_if T e' dt' df' ∈ ⊥.
+Proof.
+  intros. unfold sem_typ_bot in *. unfold sem_typ_top in *.
+  intros. specialize (H n). specialize (H0 n). specialize (H1 n).
+  hauto ctrs:rne_rel limit:100.
+Qed.
+
+Lemma sem_top_true : 
+  (dnf_reif typ_bool d_true) ≈ (dnf_reif typ_bool d_true) ∈ ⊤.
+Proof.
+  sauto.
+Qed.
+
+Lemma sem_top_false : 
+  (dnf_reif typ_bool d_false) ≈ (dnf_reif typ_bool d_false) ∈ ⊤.
+Proof.
+  sauto.
+Qed.
+
+Lemma sem_typ_top_abs : forall f f' S T,
+  (forall e e', e ≈ e' ∈ ⊥ -> 
+    exists b b', f ∙ (d_refl S e) ↘ b /\ f' ∙ (d_refl S e') ↘ b' /\ 
+      (dnf_reif T b) ≈ (dnf_reif T b') ∈ ⊤) ->
+  (dnf_reif (S → T) f) ≈ (dnf_reif (S → T) f') ∈ ⊤.
+Proof.
+  intros. unfold sem_typ_top. intros.
+  assert (dne_l n ≈ dne_l n ∈ ⊥) by (sauto use:sem_typ_bot_var).
+  apply H in H0.
+  destruct H0 as [b [b']]. intuition.
+  unfold sem_typ_top in H3. specialize (H3 (1 + n)).
+  hauto ctrs:rnf_rel limit:100.
 Qed.

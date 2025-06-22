@@ -3,8 +3,8 @@ Require Import Coq.Lists.List.
 From Hammer Require Import Tactics.
 From TLC Require Import LibTactics.
 
-Require Import nbe.stlc.def_syntax.
-Require Import nbe.stlc.def_nbe.
+Require Export nbe.stlc.def_syntax.
+Require Export nbe.stlc.def_nbe.
 
 Lemma app_eval_det : 
   ( forall t ρ a1, ⟦ t ⟧ ρ ↘ a1 -> forall a2, ⟦ t ⟧ ρ ↘ a2 -> a1 = a2 ) /\
