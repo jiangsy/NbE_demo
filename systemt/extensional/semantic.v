@@ -97,7 +97,6 @@ where "f ∙ a ↘ b" := (AppRel f a b) and
       "rec( T , dz , ds , dn ) ↘ d" := (RecRel T dz ds dn d) and 
       "⟦ σ ⟧s ρ ↘ ρ'" := (SubstRel σ ρ ρ').
 
-
 Scheme app_ind := Induction for AppRel Sort Prop
   with eval_ind := Induction for EvalRel Sort Prop
   with rec_ind := Induction for RecRel Sort Prop 
