@@ -31,6 +31,13 @@ opam repo add coq-released https://coq.inria.fr/opam/released
 opam install coq-hammer-tactics
 ```
 
+- [`TLC`](https://github.com/charguer/tlc)((tested on version 20240209))
+
+```bash
+opam repo add coq-released http://coq.inria.fr/opam/released
+opam install coq-tlc
+```
+
 - [`autosubst-ocaml`](https://github.com/uds-psl/autosubst-ocaml) (tested on version 1.1)
 
 ```bash
