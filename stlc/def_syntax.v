@@ -41,7 +41,7 @@ where "Γ ⊢ t : T" := (wf_exp Γ t T).
 Inductive ne : Set :=
   | ne_v (vi : nat)
   | ne_app (u : ne) (v : nf)
-  | ne_if (u : nf) (v1 v2 : nf)
+  | ne_if (T:typ) (u : ne) (v1 v2 : nf)
 with nf : Set :=
   | nf_ne (u : ne)
   | nf_abs (v : nf)
@@ -56,9 +56,9 @@ Inductive eq_exp : ctx -> exp -> exp -> typ -> Prop :=
     Γ ⊢ s : S ->
     Γ ⊢ exp_app (λ t) s ≈ t [s..] : T
 | exp_eq_beta_if_true : forall Γ t1 t2 T,
-    Γ ⊢ exp_if exp_true t1 t2 ≈ t1 : T
+    Γ ⊢ exp_if T exp_true t1 t2 ≈ t1 : T
 | exp_eq_beta_if_false : forall Γ t1 t2 T,
-    Γ ⊢ exp_if exp_false t1 t2 ≈ t2 : T
+    Γ ⊢ exp_if T exp_false t1 t2 ≈ t2 : T
 | exp_eq_comp_true : forall Γ,
     Γ ⊢ exp_true ≈ exp_true : typ_bool
 | exp_eq_comp_false : forall Γ,
@@ -67,7 +67,7 @@ Inductive eq_exp : ctx -> exp -> exp -> typ -> Prop :=
     Γ ⊢ r ≈ r' : typ_bool ->
     Γ ⊢ s ≈ s' : T ->
     Γ ⊢ t ≈ t' : T ->
-    Γ ⊢ exp_if r s t ≈ exp_if r' s' t' : T
+    Γ ⊢ exp_if T r s t ≈ exp_if T r' s' t' : T
 | exp_eq_comp_var : forall Γ n T,
     nth_error Γ n = Some T ->
     Γ ⊢ exp_var n ≈ exp_var n : T
@@ -101,7 +101,7 @@ with ne_to_exp (u : ne) : exp :=
   match u with
   | ne_app u' w => exp_app (ne_to_exp u') (nf_to_exp w)
   | ne_v n => exp_var n
-  | ne_if u' v1 v2 => exp_if (nf_to_exp u') (nf_to_exp v1) (nf_to_exp v2)
+  | ne_if T u' v1 v2 => exp_if T (ne_to_exp u') (nf_to_exp v1) (nf_to_exp v2)
   end.
 
 Coercion nf_to_exp : nf >-> exp.
