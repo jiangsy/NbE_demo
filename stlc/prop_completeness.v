@@ -259,3 +259,11 @@ Proof.
   intros. unfold sem_env in *. intros.
   sauto use:sem_typ_trans limit:50.
 Qed.
+
+Definition sem_exp (Γ : ctx) (t t' : exp) (T : typ) : Prop := 
+  forall ρ ρ', ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ -> 
+    exists a a' f f' Δ, 
+      ρ ≈ ρ' ∈ ⟦ Δ ⟧Γ /\
+      ⟦ t ⟧ (f ρ) ↘ a /\ 
+      ⟦ t' ⟧ (f' ρ') ↘ a' /\ 
+      a ≈ a' ∈ ⟦ T ⟧T.
