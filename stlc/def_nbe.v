@@ -68,6 +68,12 @@ with app_rel : d -> d -> d -> Prop :=
 where "f ∙ a ↘ b" := (app_rel f a b) and 
       "⟦ t ⟧ ρ ↘ a" := (eval_rel t ρ a).
 
+Definition eval_subst_rel (σ : nat -> exp) (ρ ρ' : env) := 
+  forall i a, ⟦ σ i ⟧ ρ ↘ a -> ρ' i = a.
+
+Notation "⟦ σ ⟧s ρ ↘ ρ'" := (eval_subst_rel σ ρ ρ')
+  (at level 55, no associativity).
+
 Scheme eval_ind := Induction for eval_rel Sort Prop
   with app_ind := Induction for app_rel Sort Prop.
 
