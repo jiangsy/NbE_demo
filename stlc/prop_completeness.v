@@ -235,4 +235,27 @@ Definition sem_env (ρ ρ' : env) (Γ : ctx) :=
 Notation "ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ" := (sem_env ρ ρ' Γ)
   (at level 55, ρ' at next level, no associativity).
 
+Lemma sem_env_symm : forall Γ ρ ρ',
+  ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ ->
+  ρ' ≈ ρ ∈ ⟦ Γ ⟧Γ.
+Proof.
+  intros. unfold sem_env in *.
+  sauto use:sem_typ_symm limit:50.
+Qed.
 
+Lemma sem_eenv_refl : forall Γ ρ ρ',
+  ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ ->
+  ρ ≈ ρ ∈ ⟦ Γ ⟧Γ.
+Proof.
+  intros. unfold sem_env in *.
+  sauto use:sem_typ_refl limit:50.
+Qed.
+
+Lemma sem_env_trans : forall Γ ρ1 ρ2 ρ3,
+  ρ1 ≈ ρ2 ∈ ⟦ Γ ⟧Γ ->
+  ρ2 ≈ ρ3 ∈ ⟦ Γ ⟧Γ ->
+  ρ1 ≈ ρ3 ∈ ⟦ Γ ⟧Γ.
+Proof.
+  intros. unfold sem_env in *. intros.
+  sauto use:sem_typ_trans limit:50.
+Qed.
