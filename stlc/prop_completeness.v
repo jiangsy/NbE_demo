@@ -270,14 +270,14 @@ Import UnscopedNotations.
 (* do we need a pair of subst (σ, σ')? *)
 (* if so, sem_subst needs to be defined together with sem_exp, seems to rely on the impredicative encoding  *)
 Definition sem_exp (Γ : ctx) (t1 t2 : exp) (T : typ) : Prop := 
-  forall (ρ1 ρ2 ρ1' ρ2' : env) (σ : nat -> exp),
+  forall (ρ1 ρ2  : env) ,
     ρ1 ≈ ρ2 ∈ ⟦ Γ ⟧Γ -> 
-    ⟦ σ ⟧s ρ1 ↘ ρ1' -> ⟦ σ ⟧s ρ2' ↘ ρ2' ->
-    exists a1 a1' a2 a2',
-    ⟦ t1 ⟧ ρ1 ↘ a1 /\ ⟦ t2 ⟧ ρ2 ↘ a2 /\
-    ⟦ t1[σ] ⟧ ρ1 ↘ a1' /\ ⟦ t1 ⟧ ρ1' ↘ a1' /\
-    ⟦ t2[σ] ⟧ ρ2 ↘ a2' /\ ⟦ t2 ⟧ ρ2' ↘ a2' /\
-    a1 ≈ a2 ∈ ⟦ T ⟧T /\ a1' ≈ a2' ∈ ⟦ T ⟧T.
+    exists a1 a2,
+    ⟦ t1 ⟧ ρ1 ↘ a1 /\ ⟦ t2 ⟧ ρ2 ↘ a2 /\ a1 ≈ a2 ∈ ⟦ T ⟧T /\
+    forall (σ : nat -> exp) ρ1' ρ2' a1' a2', 
+    ⟦ σ ⟧s ρ1 ↘ ρ1' -> ⟦ σ ⟧s ρ2 ↘ ρ2' ->
+    ⟦ t1[σ] ⟧ ρ1 ↘ a1' -> ⟦ t1 ⟧ ρ1' ↘ a1' ->
+    ⟦ t2[σ] ⟧ ρ2 ↘ a2' -> ⟦ t2 ⟧ ρ2' ↘ a2' -> a1' ≈ a2' ∈ ⟦ T ⟧T.
 
 Notation "Γ ⊨ t ≈ t' : T" := (sem_exp Γ t t' T) 
   (at level 55, t at next level, t' at next level, no associativity).
@@ -291,8 +291,8 @@ Lemma sem_exp_subsume_exp' : forall Γ t t' T,
   Γ ⊨' t ≈ t' : T.
 Proof.
   intros. unfold sem_exp in *. unfold sem_exp' in *.
-  intros. eapply H with (σ:=fun x => exp_var x) in H0; eauto.
-  destruct H0 as [a [a']]. asimpl in H0. sauto.
+  intros. eapply H in H0; eauto.
+  sauto.
 Qed.
 
 Lemma sem_eq_exp_symm : forall Γ t t' T,
@@ -301,6 +301,6 @@ Lemma sem_eq_exp_symm : forall Γ t t' T,
 Proof.
   intros. unfold sem_exp in *. intros.
   apply sem_env_symm in H0.
-  eapply H in H0. destruct H0 as [a [a']];
-    sauto use:sem_typ_symm,sem_env_symm limit:150.
+  eapply H in H0. destruct H0 as [a [a']]. 
+  exists a', a. sauto use:sem_typ_symm.
 Qed.
