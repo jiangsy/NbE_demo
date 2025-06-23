@@ -274,10 +274,10 @@ Definition sem_exp (Γ : ctx) (t1 t2 : exp) (T : typ) : Prop :=
     ρ1 ≈ ρ2 ∈ ⟦ Γ ⟧Γ -> 
     exists a1 a2,
     ⟦ t1 ⟧ ρ1 ↘ a1 /\ ⟦ t2 ⟧ ρ2 ↘ a2 /\ a1 ≈ a2 ∈ ⟦ T ⟧T /\
-    forall (σ : nat -> exp) ρ1' ρ2' a1' a2', 
+    forall (σ : nat -> exp) ρ1' ρ2', 
     ⟦ σ ⟧s ρ1 ↘ ρ1' -> ⟦ σ ⟧s ρ2 ↘ ρ2' ->
-    ⟦ t1[σ] ⟧ ρ1 ↘ a1' -> ⟦ t1 ⟧ ρ1' ↘ a1' ->
-    ⟦ t2[σ] ⟧ ρ2 ↘ a2' -> ⟦ t2 ⟧ ρ2' ↘ a2' -> a1' ≈ a2' ∈ ⟦ T ⟧T.
+    (forall a1' a1'', ⟦ t1[σ] ⟧ ρ1 ↘ a1' -> ⟦ t1 ⟧ ρ1' ↘ a1'' -> a1' ≈ a1'' ∈ ⟦ T ⟧T) /\
+    (forall a2' a2'', ⟦ t2[σ] ⟧ ρ2 ↘ a2' -> ⟦ t2 ⟧ ρ2' ↘ a2'' -> a2' ≈ a2'' ∈ ⟦ T ⟧T).
 
 Notation "Γ ⊨ t ≈ t' : T" := (sem_exp Γ t t' T) 
   (at level 55, t at next level, t' at next level, no associativity).
@@ -302,5 +302,5 @@ Proof.
   intros. unfold sem_exp in *. intros.
   apply sem_env_symm in H0.
   eapply H in H0. destruct H0 as [a [a']]. 
-  exists a', a. sauto use:sem_typ_symm.
+  exists a', a. sauto use:sem_typ_symm limit:50.
 Qed.
