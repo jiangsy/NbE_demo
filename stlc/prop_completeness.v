@@ -269,11 +269,15 @@ Import UnscopedNotations.
 
 (* do we need a pair of subst (σ, σ')? *)
 (* if so, sem_subst needs to be defined together with sem_exp, seems to rely on the impredicative encoding  *)
-Definition sem_exp (Γ : ctx) (t t' : exp) (T : typ) : Prop := 
-  forall (ρ ρ' : env) (σ : nat -> exp),
-    ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ -> 
-    exists a a',
-    ⟦ t[σ] ⟧ ρ ↘ a /\  ⟦ t'[σ] ⟧ ρ' ↘ a' /\ a ≈ a' ∈ ⟦ T ⟧T.
+Definition sem_exp (Γ : ctx) (t1 t2 : exp) (T : typ) : Prop := 
+  forall (ρ1 ρ2 ρ1' ρ2' : env) (σ : nat -> exp),
+    ρ1 ≈ ρ2 ∈ ⟦ Γ ⟧Γ -> 
+    ⟦ σ ⟧s ρ1 ↘ ρ1' -> ⟦ σ ⟧s ρ2' ↘ ρ2' ->
+    exists a1 a1' a2 a2',
+    ⟦ t1 ⟧ ρ1 ↘ a1 /\ ⟦ t2 ⟧ ρ2 ↘ a2 /\
+    ⟦ t1[σ] ⟧ ρ1 ↘ a1' /\ ⟦ t1 ⟧ ρ1' ↘ a1' /\
+    ⟦ t2[σ] ⟧ ρ2 ↘ a2' /\ ⟦ t2 ⟧ ρ2' ↘ a2' /\
+    a1 ≈ a2 ∈ ⟦ T ⟧T /\ a1' ≈ a2' ∈ ⟦ T ⟧T.
 
 Notation "Γ ⊨ t ≈ t' : T" := (sem_exp Γ t t' T) 
   (at level 55, t at next level, t' at next level, no associativity).
@@ -281,6 +285,7 @@ Notation "Γ ⊨ t ≈ t' : T" := (sem_exp Γ t t' T)
 Notation "Γ ⊨' t ≈ t' : T" := (sem_exp' Γ t t' T) 
   (at level 55, t at next level, t' at next level, no associativity).
 
+(* this is an expected prop of the new sem_exp *)
 Lemma sem_exp_subsume_exp' : forall Γ t t' T,
   Γ ⊨ t ≈ t' : T ->
   Γ ⊨' t ≈ t' : T.
