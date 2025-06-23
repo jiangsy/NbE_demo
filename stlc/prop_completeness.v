@@ -260,10 +260,29 @@ Proof.
   sauto use:sem_typ_trans limit:50.
 Qed.
 
-Definition sem_exp (Γ : ctx) (t t' : exp) (T : typ) : Prop := 
+Definition sem_exp' (Γ : ctx) (t t' : exp) (T : typ) : Prop := 
   forall ρ ρ', ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ -> 
-    exists a a' f f' Δ, 
-      (f ρ) ≈ (f ρ') ∈ ⟦ Δ ⟧Γ /\
+    exists a a', ⟦ t ⟧ ρ ↘ a /\ ⟦ t' ⟧ ρ' ↘ a' /\ a ≈ a' ∈ ⟦ T ⟧T.
+
+Definition sem_exp (Γ : ctx) (t t' : exp) (T : typ) : Prop := 
+  forall ρ ρ' f f' Δ, 
+    ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ ->
+    (f ρ) ≈ (f' ρ') ∈ ⟦ Δ ⟧Γ ->
+    exists a a', 
       ⟦ t ⟧ (f ρ) ↘ a /\ 
       ⟦ t' ⟧ (f' ρ') ↘ a' /\ 
       a ≈ a' ∈ ⟦ T ⟧T.
+
+Notation "Γ ⊨ t ≈ t' : T" := (sem_exp Γ t t' T) 
+  (at level 55, t at next level, t' at next level, no associativity).
+
+Notation "Γ ⊨' t ≈ t' : T" := (sem_exp' Γ t t' T) 
+  (at level 55, t at next level, t' at next level, no associativity).
+
+Lemma sem_exp_subsume_exp' : forall Γ t t' T,
+  Γ ⊨ t ≈ t' : T ->
+  Γ ⊨' t ≈ t' : T.
+Proof.
+  intros. unfold sem_exp in *. unfold sem_exp' in *.
+  intros. eapply H with (f:=id) (f':=id) in H0; eauto.
+Qed.
