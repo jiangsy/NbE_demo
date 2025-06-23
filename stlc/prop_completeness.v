@@ -264,6 +264,7 @@ Definition sem_exp' (Γ : ctx) (t t' : exp) (T : typ) : Prop :=
   forall ρ ρ', ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ -> 
     exists a a', ⟦ t ⟧ ρ ↘ a /\ ⟦ t' ⟧ ρ' ↘ a' /\ a ≈ a' ∈ ⟦ T ⟧T.
 
+(* maybe I should just use a single, instead of f, f'? *)
 Definition sem_exp (Γ : ctx) (t t' : exp) (T : typ) : Prop := 
   forall ρ ρ' f f' Δ, 
     ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ ->
@@ -285,4 +286,15 @@ Lemma sem_exp_subsume_exp' : forall Γ t t' T,
 Proof.
   intros. unfold sem_exp in *. unfold sem_exp' in *.
   intros. eapply H with (f:=id) (f':=id) in H0; eauto.
+Qed.
+
+Lemma sem_eq_exp_symm : forall Γ t t' T,
+  Γ ⊨ t ≈ t' : T ->
+  Γ ⊨ t' ≈ t : T.
+Proof.
+  intros. unfold sem_exp in *. intros.
+  apply sem_env_symm in H0.
+  eapply H in H0. destruct H0 as [a [a']];
+    sauto use:sem_typ_symm,sem_env_symm limit:150.
+  eapply sem_env_symm; eauto.
 Qed.
