@@ -125,3 +125,114 @@ Proof.
     + unfold sem_typ_bot in H. specialize (H n).
       hauto limit:100 ctrs:rnf_rel. 
 Qed.
+
+Lemma sem_bool_symm : forall a a',
+  a ≈ a' ∈ Bool -> 
+  a' ≈ a ∈ Bool.
+Proof.
+  sauto use:sem_bot_symm limit:50.
+Qed.
+
+Lemma sem_bool_trans : forall a1 a2 a3,
+  a1 ≈ a2 ∈ Bool -> 
+  a2 ≈ a3 ∈ Bool -> 
+  a1 ≈ a3 ∈ Bool.
+Proof.
+  sauto use:sem_bot_trans limit:50.
+Qed.
+
+Definition sem_arr (S T : sem_typ) : sem_typ :=
+  fun f f' => forall a a', S a a' -> exists b b', f ∙ a ↘ b /\ f' ∙ a' ↘ b' /\ T b b'.
+
+Notation "S ⇒ T" := (sem_arr S T)  (at level 55, right associativity).
+
+Lemma arr_realize_sem_arr : forall S T A B,
+  S ⊩ A -> T ⊩ B -> 
+  (S → T) ⊩ (A ⇒ B).
+Proof.
+  intros. unfold realize in *. split.
+  - intros. apply sem_typ_top_abs. intros. unfold sem_arr in H1.  
+    sauto limit:50.
+  - intros. unfold sem_arr. intros.
+    sauto use:sem_typ_bot_app limit:100.
+Qed.
+
+Fixpoint interp_typ (T : typ) : sem_typ :=
+  match T with 
+  | typ_bool => sem_typ_bool 
+  | S' → T' => (interp_typ S') ⇒ (interp_typ T')
+  end.
+
+Notation "⟦ T ⟧T" := (interp_typ T) (at level 55, no associativity).
+
+Notation "a ≈ a' ∈ ⟦ T ⟧T" := ((interp_typ T) a a') 
+  (at level 55, a' at next level, no associativity).
+
+Lemma sem_typ_symm: forall a a' T,
+  a ≈ a' ∈ ⟦ T ⟧T ->
+  a' ≈ a ∈ ⟦ T ⟧T.
+Proof.
+  intros. gen a a'. induction T; intros.
+  - sauto use:sem_bool_symm limit:50.
+  - simpl in *. unfold sem_arr in *. intros.
+    apply IHT1 in H0. sauto limit:50.
+Qed.
+
+Lemma sem_typ_trans : forall a1 a2 a3 T,
+  a1 ≈ a2 ∈ ⟦ T ⟧T ->
+  a2 ≈ a3 ∈ ⟦ T ⟧T ->
+  a1 ≈ a3 ∈ ⟦ T ⟧T.
+Proof.
+  intros. gen a1 a2 a3. induction T; intros.
+  - sauto use:sem_bool_trans limit:50.
+  - simpl in *. unfold sem_arr in *. intros.
+    apply sem_typ_symm in H1 as H1'.
+    eapply IHT1 in H1 as H1''; eauto.
+    apply H in H1 as IH1.
+    apply H0 in H1'' as IH2.
+    destruct IH1 as [b1 [b2]].
+    destruct IH2 as [b2' [b3]].
+    intuition.
+    eapply app_det in H2; eauto. subst.
+    sauto.
+Qed.
+
+Lemma sem_typ_refl : forall a a' T,
+  a ≈ a' ∈ ⟦ T ⟧T ->
+  a ≈ a ∈ ⟦ T ⟧T.
+Proof.
+  intros.
+  eapply sem_typ_trans with (a2:=a'); eauto using sem_typ_symm.
+Qed.
+
+Lemma typ_realize_interp_typ : forall T,
+  T ⊩ ⟦ T ⟧T.
+Proof.
+  intros. induction T.
+  - apply bool_realize_sem_bool.
+  - apply arr_realize_sem_arr; eauto.
+Qed.
+
+Lemma bot_subset_T : forall e e' T,
+  e ≈ e' ∈ ⊥ ->
+  d_refl T e ≈ d_refl T e' ∈ ⟦ T ⟧T.
+Proof.
+  intros. pose proof (typ_realize_interp_typ T).
+  sauto unfold:realize.
+Qed.
+
+Lemma T_subset_top : forall a a' T,
+  a ≈ a' ∈ ⟦ T ⟧T ->
+  (dnf_reif T a) ≈ (dnf_reif T a') ∈ ⊤.
+Proof.
+  intros. pose proof (typ_realize_interp_typ T).
+  sauto unfold:realize.
+Qed.
+
+Definition sem_env (ρ ρ' : env) (Γ : ctx) :=
+  forall i T, nth_error Γ i = Some T -> (ρ i) ≈ (ρ' i) ∈ ⟦ T ⟧T.
+
+Notation "ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ" := (sem_env ρ ρ' Γ)
+  (at level 55, ρ' at next level, no associativity).
+
+

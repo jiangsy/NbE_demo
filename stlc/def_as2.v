@@ -6,19 +6,19 @@ Require Import Setoid Morphisms Relation_Definitions.
 Module Core.
 
 Inductive typ : Type :=
-  | typ_arr : typ -> typ -> typ
-  | typ_bool : typ.
+  | typ_bool : typ
+  | typ_arr : typ -> typ -> typ.
+
+Lemma congr_typ_bool : typ_bool = typ_bool.
+Proof.
+exact (eq_refl).
+Qed.
 
 Lemma congr_typ_arr {s0 : typ} {s1 : typ} {t0 : typ} {t1 : typ}
   (H0 : s0 = t0) (H1 : s1 = t1) : typ_arr s0 s1 = typ_arr t0 t1.
 Proof.
 exact (eq_trans (eq_trans eq_refl (ap (fun x => typ_arr x s1) H0))
          (ap (fun x => typ_arr t0 x) H1)).
-Qed.
-
-Lemma congr_typ_bool : typ_bool = typ_bool.
-Proof.
-exact (eq_refl).
 Qed.
 
 Inductive exp : Type :=

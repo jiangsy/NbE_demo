@@ -3,8 +3,8 @@ typ : Type
 exp : Type
 
 -- the constructors for typ
-typ_arr  : typ -> typ -> typ
 typ_bool : typ
+typ_arr  : typ -> typ -> typ
 
 -- the constructors for exp
 exp_app   : exp -> exp -> exp
