@@ -10,9 +10,9 @@ make
 
 The proof of System T is in `./systemt/`. 
 
-`./ptt/` contains unfinished work for a extending System T to a dependently typed system. Since its formalization requires induction-recursion which is not currently supported by Coq, it may remain unfinished for a long time (there is a workaround to rely on the impredicativity of `Prop` in Coq, as shown in A "Coq Formalization of Normalization by Evaluation for Martin-Löf Type Theory")
+`./ptt/` contains unfinished work for a extending System T to a dependently typed system. Since its corresponding Agda formalization requires induction-recursion which is not currently supported by Coq, it may remain unfinished for a long time (there is a workaround to rely on the impredicativity of `Prop` in Coq, as shown in A "Coq Formalization of Normalization by Evaluation for Martin-Löf Type Theory")
 
-`./stlc` contains unfinished work for replacing explicit substitutions with substitution-as-operations.
+`./stlc/` contains unfinished work for replacing explicit substitutions with substitution-as-operations.
 
 ### Dependency
 
@@ -31,7 +31,7 @@ opam repo add coq-released https://coq.inria.fr/opam/released
 opam install coq-hammer-tactics
 ```
 
-- [`TLC`](https://github.com/charguer/tlc)((tested on version 20240209))
+- [`TLC`](https://github.com/charguer/tlc)(tested on version 20240209)
 
 ```bash
 opam repo add coq-released http://coq.inria.fr/opam/released
