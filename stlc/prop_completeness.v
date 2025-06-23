@@ -263,7 +263,7 @@ Qed.
 Definition sem_exp (Γ : ctx) (t t' : exp) (T : typ) : Prop := 
   forall ρ ρ', ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ -> 
     exists a a' f f' Δ, 
-      ρ ≈ ρ' ∈ ⟦ Δ ⟧Γ /\
+      (f ρ) ≈ (f ρ') ∈ ⟦ Δ ⟧Γ /\
       ⟦ t ⟧ (f ρ) ↘ a /\ 
       ⟦ t' ⟧ (f' ρ') ↘ a' /\ 
       a ≈ a' ∈ ⟦ T ⟧T.
