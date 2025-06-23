@@ -261,18 +261,19 @@ Proof.
 Qed.
 
 Definition sem_exp' (Γ : ctx) (t t' : exp) (T : typ) : Prop := 
-  forall ρ ρ', ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ -> 
+  forall ρ ρ', 
+    ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ -> 
     exists a a', ⟦ t ⟧ ρ ↘ a /\ ⟦ t' ⟧ ρ' ↘ a' /\ a ≈ a' ∈ ⟦ T ⟧T.
 
-(* maybe I should just use a single, instead of f, f'? *)
+Import UnscopedNotations.
+
+(* do we need a pair of subst (σ, σ')? *)
+(* if so, sem_subst needs to be defined together with sem_exp, seems to rely on the impredicative encoding  *)
 Definition sem_exp (Γ : ctx) (t t' : exp) (T : typ) : Prop := 
-  forall ρ ρ' f f' Δ, 
-    ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ ->
-    (f ρ) ≈ (f' ρ') ∈ ⟦ Δ ⟧Γ ->
-    exists a a', 
-      ⟦ t ⟧ (f ρ) ↘ a /\ 
-      ⟦ t' ⟧ (f' ρ') ↘ a' /\ 
-      a ≈ a' ∈ ⟦ T ⟧T.
+  forall (ρ ρ' : env) (σ : nat -> exp),
+    ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ -> 
+    exists a a',
+    ⟦ t[σ] ⟧ ρ ↘ a /\  ⟦ t'[σ] ⟧ ρ' ↘ a' /\ a ≈ a' ∈ ⟦ T ⟧T.
 
 Notation "Γ ⊨ t ≈ t' : T" := (sem_exp Γ t t' T) 
   (at level 55, t at next level, t' at next level, no associativity).
@@ -285,7 +286,8 @@ Lemma sem_exp_subsume_exp' : forall Γ t t' T,
   Γ ⊨' t ≈ t' : T.
 Proof.
   intros. unfold sem_exp in *. unfold sem_exp' in *.
-  intros. eapply H with (f:=id) (f':=id) in H0; eauto.
+  intros. eapply H with (σ:=fun x => exp_var x) in H0; eauto.
+  destruct H0 as [a [a']]. asimpl in H0. sauto.
 Qed.
 
 Lemma sem_eq_exp_symm : forall Γ t t' T,
@@ -296,5 +298,4 @@ Proof.
   apply sem_env_symm in H0.
   eapply H in H0. destruct H0 as [a [a']];
     sauto use:sem_typ_symm,sem_env_symm limit:150.
-  eapply sem_env_symm; eauto.
 Qed.

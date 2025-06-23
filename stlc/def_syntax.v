@@ -7,7 +7,6 @@ Require Export nbe.stlc.def_as2.
 Declare Scope full_scope.
 Delimit Scope full_scope with F.
 
-Import SubstNotations.
 Import UnscopedNotations.
 
 Definition ctx := list typ.
