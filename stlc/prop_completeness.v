@@ -243,7 +243,7 @@ Proof.
   sauto use:sem_typ_symm limit:50.
 Qed.
 
-Lemma sem_eenv_refl : forall Γ ρ ρ',
+Lemma sem_env_refl : forall Γ ρ ρ',
   ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ ->
   ρ ≈ ρ ∈ ⟦ Γ ⟧Γ.
 Proof.
@@ -259,6 +259,7 @@ Proof.
   intros. unfold sem_env in *. intros.
   sauto use:sem_typ_trans limit:50.
 Qed.
+
 
 Definition sem_exp' (Γ : ctx) (t t' : exp) (T : typ) : Prop := 
   forall ρ ρ', 
@@ -303,4 +304,20 @@ Proof.
   apply sem_env_symm in H0.
   eapply H in H0. destruct H0 as [a [a']]. 
   exists a', a. sauto use:sem_typ_symm limit:50.
+Qed.
+
+Lemma sem_exp_trans : forall Γ t1 t2 t3 T,
+  Γ ⊨ t1 ≈ t2 : T ->
+  Γ ⊨ t2 ≈ t3 : T ->
+  Γ ⊨ t1 ≈ t3 : T.
+Proof.
+  intros. unfold sem_exp in *. intros.
+  apply H in H1 as IH1.
+  apply sem_env_symm in H1 as H1'.
+  apply sem_env_refl in H1'.
+  apply H0 in H1' as IH2.
+  destruct IH1 as [a1 [a2]].
+  destruct IH2 as [a2' [a3]]. intuition.
+  eapply eval_det in H2; eauto. subst.
+  exists a1, a3; intuition; sauto use:sem_typ_trans.
 Qed.
