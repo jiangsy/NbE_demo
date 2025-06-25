@@ -262,6 +262,10 @@ Qed.
 
 Import UnscopedNotations.
 
+(* 
+The naive version of `eval_subst_prop` cannot be proved,
+which is required by `sem_eq_beta_abs`.
+*)
 Module SemExp0.
   Definition sem_exp (Γ : ctx) (t t' : exp) (T : typ) : Prop := 
     forall ρ ρ', 
@@ -270,6 +274,30 @@ Module SemExp0.
 
   Notation "Γ ⊨ t ≈ t' : T" := (sem_exp Γ t t' T) 
     (at level 55, t at next level, t' at next level, no associativity).
+
+  Notation "Γ ⊨ t : T" := (sem_exp Γ t t T) 
+    (at level 55, t at next level, no associativity).
+
+  Lemma eval_subst_prop : forall ρ t σ a ρ',
+    ⟦ t[σ] ⟧ ρ ↘ a ->
+    ⟦ σ ⟧s ρ ↘ ρ' ->
+    ⟦ t ⟧ ρ' ↘ a.
+  Proof.
+    intros. gen a σ ρ. induction t; asimpl; try sauto limit:50; intros. 
+    - dependent destruction H; asimpl in x;
+      unfold eval_subst_rel in H0; admit.
+    - dependent destruction H. 
+      (* problematic *)
+      admit. 
+  Abort.
+
+  Lemma eval_subst_prop : forall ρ t σ a ρ',
+    ⟦ t[σ] ⟧ ρ ↘ a ->
+    ⟦ σ ⟧s ρ ↘ ρ' ->
+    (* can we use exists T here? *)
+    exists a' T, ⟦ t ⟧ ρ' ↘ a' /\ a ≈ a' ∈ ⟦ T ⟧T.
+  Proof.
+  Abort.
 
   Lemma sem_eq_exp_symm : forall Γ t t' T,
     Γ ⊨ t ≈ t' : T ->
@@ -293,24 +321,40 @@ Module SemExp0.
       intros i n ?.
       destruct i; simpl; sauto.
     }
-    apply H in H2. sauto. 
+    sauto.
   Qed.
 
   Lemma sem_eq_beta_abs : forall Γ t s S T,
-    Γ ⊨ t ≈ t : S → T ->
-    Γ ⊨ s ≈ s : S ->
+    Γ ⊨ t : S → T ->
+    Γ ⊨ s : S ->
     Γ ⊨ (λ t) ▫ s ≈ t[s..] : T.
   Proof.
+    intros. unfold sem_exp in *; intros.
+    apply H in H1 as Ht.
+    apply H0 in H1 as Hs. firstorder. simpl in *.
+    unfold sem_arr in *.
+    asimpl.
+    (* problematic *)
+    admit.
   Admitted.
 
   Lemma sem_eq_eta_abs : forall Γ t S T,
-    Γ ⊨ t ≈ t : S → T ->
+    Γ ⊨ t : S → T ->
     Γ ⊢ t ≈ (λ (t⟨↑⟩ ▫ (exp_var 0))) : S → T.
   Proof.
   Admitted.
 
 End SemExp0.
 
+(* 
+In SemExp1, `sem_eq_cong_abs` depends on `eval_weaken_prop`, 
+which is a more specialized form of `eval_subst_prop` in SemExp0.
+but the naive version of `eval_weaken_prop` can neither be proved.
+
+in the worst case, we may need to embed all subst_prop rules in explicit 
+substitution in `sem_exp` defs here. if that's true, 
+we have many more proof obligations to deal with.
+*)
 Module SemExp1.
   Definition sem_exp (Γ : ctx) (t1 t2 : exp) (T : typ) : Prop :=
     forall (ρ1 ρ2 : env),
@@ -327,6 +371,9 @@ Module SemExp1.
   Notation "Γ ⊨ t ≈ t' : T" := (sem_exp Γ t t' T) 
     (at level 55, t at next level, t' at next level, no associativity).
 
+  Notation "Γ ⊨ t : T" := (sem_exp Γ t t T) 
+    (at level 55, t at next level, no associativity).
+
   Lemma sem_eq_exp_symm : forall Γ t t' T,
     Γ ⊨ t ≈ t' : T ->
     Γ ⊨ t' ≈ t : T.
@@ -340,6 +387,15 @@ Module SemExp1.
     - specialize (H0 _ _ H2). firstorder.
       repeat eexists; sauto use:sem_typ_symm limit:50.
   Qed.
+
+  Lemma eval_weaken_prop : forall t ρ a b,
+    ⟦ t ⟨↑⟩ ⟧ (ρ ↦ b) ↘ a ->
+    ⟦ t ⟧ ρ ↘ a.
+  Proof.
+    intros. gen ρ a b. induction t; intros; asimpl; try sauto limit:50.
+    (* does not hold *)
+    - admit.
+  Admitted.
 
   Lemma sem_eq_cong_abs : forall Γ t t' S T,
     (S :: Γ) ⊨ t ≈ t' : T ->
@@ -358,22 +414,23 @@ Module SemExp1.
       assert (⟦  0 __exp .: (σ ∘ ⟨↑⟩) ⟧s ρ1 ↦ a ↘ ρ1' ↦ a). {
         intros i b ?. destruct i; simpl in *.
         - dependent destruction H5. auto.
-        - admit.
+        - eapply H1. unfold funcomp in H5.
+          eapply eval_weaken_prop; eauto.
       }
       specialize (H _ _ H5) as [a1 [a2 [? []]]].
       sauto.
-    - intros. admit.
+    - admit.
   Admitted.
 
   Lemma sem_eq_beta_abs : forall Γ t s S T,
-    Γ ⊨ t ≈ t : S → T ->
-    Γ ⊨ s ≈ s : S ->
+    Γ ⊨ t : S → T ->
+    Γ ⊨ s : S ->
     Γ ⊨ (λ t) ▫ s ≈ t[s..] : T.
   Proof.
   Admitted.
 
   Lemma sem_eq_eta_abs : forall Γ t S T,
-    Γ ⊨ t ≈ t : S → T ->
+    Γ ⊨ t : S → T ->
     Γ ⊢ t ≈ (λ (t⟨↑⟩ ▫ (exp_var 0))) : S → T.
   Proof.
   Admitted.
