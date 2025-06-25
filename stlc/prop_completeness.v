@@ -349,7 +349,7 @@ Proof.
       destruct i; simpl; sauto.
     }
     specialize (H _ _ H3) as [[a1 [a2 [? []]]] []].
-    assert (⟦ scons (exp_var 0) (funcomp (ren_exp shift) σ) ⟧s ρ1 ↦ a ↘ ρ1' ↦ a). {
+    assert (⟦  0 __exp .: (σ ∘ ⟨↑⟩) ⟧s ρ1 ↦ a ↘ ρ1' ↦ a). {
       intros i b ?. destruct i; simpl in *.
       - dependent destruction H8. auto.
       - admit.
@@ -357,3 +357,5 @@ Proof.
     specialize (H6 _ _ H8) as [a1' [a1'' [? []]]].
     exists a1', a1''. firstorder.
     sauto.
+    admit.
+Admitted.

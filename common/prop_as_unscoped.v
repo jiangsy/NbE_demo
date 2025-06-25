@@ -104,7 +104,7 @@ Class Var X Y :=
 Arguments funcomp {X Y Z} (g)%_fscope (f)%_fscope.
 
 Module CombineNotations.
-  Notation "f >> g" := (funcomp g f) (at level 50) : fscope.
+  Notation "f ∘ g" := (funcomp g f) (at level 50) : fscope.
 
   Notation "s .: sigma" := (scons s sigma) (at level 55, sigma at next level, right associativity) : subst_scope.
 
@@ -119,11 +119,11 @@ Import CombineNotations.
 
 (** A generic lifting of a renaming. *)
 Definition up_ren (xi : nat -> nat) :=
-  0 .: (xi >> S).
+  0 .: (xi ∘ S).
 
 (** A generic proof that lifting of renamings composes. *)
-Lemma up_ren_ren (xi: nat -> nat) (zeta : nat -> nat) (rho: nat -> nat) (E: forall x, (xi >> zeta) x = rho x) :
-  forall x, (up_ren xi >> up_ren zeta) x = up_ren rho x.
+Lemma up_ren_ren (xi: nat -> nat) (zeta : nat -> nat) (rho: nat -> nat) (E: forall x, (xi ∘ zeta) x = rho x) :
+  forall x, (up_ren xi ∘ up_ren zeta) x = up_ren rho x.
 Proof.
   intros [|x].
   - reflexivity.
@@ -194,19 +194,19 @@ Tactic Notation "auto_case" tactic(t) :=  (match goal with
 (** Generic fsimpl tactic: simplifies the above primitives in a goal. *)
 Ltac fsimpl :=
   repeat match goal with
-         | [|- context[id >> ?f]] => change (id >> f) with f (* AsimplCompIdL *)
-         | [|- context[?f >> id]] => change (f >> id) with f (* AsimplCompIdR *)
+         | [|- context[id ∘ ?f]] => change (id ∘ f) with f (* AsimplCompIdL *)
+         | [|- context[?f ∘ id]] => change (f ∘ id) with f (* AsimplCompIdR *)
          | [|- context [id ?s]] => change (id s) with s
-         | [|- context[(?f >> ?g) >> ?h]] => change ((f >> g) >> h) with (f >> (g >> h))
+         | [|- context[(?f ∘ ?g) ∘ ?h]] => change ((f ∘ g) ∘ h) with (f ∘ (g ∘ h))
          | [|- context[(?v .: ?g) var_zero]] => change ((v .: g) var_zero) with v
          | [|- context[(?v .: ?g) 0]] => change ((v .: g) 0) with v
          | [|- context[(?v .: ?g) (S ?n)]] => change ((v .: g) (S n)) with (g n)
-         | [|- context[?f >> (?x .: ?g)]] => change (f >> (x .: g)) with g (* f should evaluate to shift *)
+         | [|- context[?f ∘ (?x .: ?g)]] => change (f ∘ (x .: g)) with g (* f should evaluate to shift *)
          | [|- context[var_zero]] =>  change var_zero with 0
          | [|- context[?x2 .: (funcomp ?f shift)]] => change (scons x2 (funcomp f shift)) with (scons (f var_zero) (funcomp f shift)); setoid_rewrite (@scons_eta' _ _ f)
          | [|- context[?f var_zero .: ?g]] => change (scons (f var_zero) g) with (scons (f var_zero) (funcomp f shift)); rewrite scons_eta'
-         | [|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f >> h) s)
-         | [|-  ?h (?f ?s) = _] => change (h (f s)) with ((f >> h) s)
+         | [|- _ =  ?h (?f ?s)] => change (h (f s)) with ((f ∘ h) s)
+         | [|-  ?h (?f ?s) = _] => change (h (f s)) with ((f ∘ h) s)
          (* DONE had to put an underscore as the last argument to scons. This might be an argument against unfolding funcomp *)
          | [|- context[funcomp _ (scons _ _)]] => setoid_rewrite scons_comp'; eta_reduce
          | [|- context[scons var_zero shift]] => setoid_rewrite scons_eta_id'; eta_reduce
