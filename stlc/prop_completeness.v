@@ -280,6 +280,19 @@ Definition sem_exp (Γ : ctx) (t1 t2 : exp) (T : typ) : Prop :=
       (forall (σ : nat -> exp) ρ2' ,
           ⟦ σ ⟧s ρ2 ↘ ρ2' -> exists a2' a2'', ⟦ t2[σ] ⟧ ρ2 ↘ a2' /\ ⟦ t2 ⟧ ρ2' ↘ a2'' /\ a2' ≈ a2'' ∈ ⟦ T ⟧T).
 
+Definition sem_exp2 (Γ : ctx) (t1 t2 : exp) (T : typ) : Prop :=
+  forall (ρ1 ρ2 : env),
+    ρ1 ≈ ρ2 ∈ ⟦ Γ ⟧Γ ->
+    (forall (σ : nat -> exp) ρ1',
+        ⟦ σ ⟧s ρ1 ↘ ρ1' ->
+        exists a1 a2,
+          ⟦ t1 ⟧ ρ1' ↘ a1 /\ ⟦ t2[σ] ⟧ ρ2 ↘ a2 /\ a1 ≈ a2 ∈ ⟦ T ⟧T) /\
+    (forall (σ : nat -> exp) ρ2',
+        ⟦ σ ⟧s ρ2 ↘ ρ2' ->
+        exists a1 a2,
+          ⟦ t1[σ] ⟧ ρ1 ↘ a1 /\ ⟦ t2 ⟧ ρ2' ↘ a2 /\ a1 ≈ a2 ∈ ⟦ T ⟧T).
+
+
 Notation "Γ ⊨ t ≈ t' : T" := (sem_exp Γ t t' T) 
   (at level 55, t at next level, t' at next level, no associativity).
 
