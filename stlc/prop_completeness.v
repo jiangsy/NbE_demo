@@ -260,86 +260,122 @@ Proof.
   sauto use:sem_typ_trans limit:50.
 Qed.
 
-
-Definition sem_exp' (Γ : ctx) (t t' : exp) (T : typ) : Prop := 
-  forall ρ ρ', 
-    ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ -> 
-    exists a a', ⟦ t ⟧ ρ ↘ a /\ ⟦ t' ⟧ ρ' ↘ a' /\ a ≈ a' ∈ ⟦ T ⟧T.
-
 Import UnscopedNotations.
 
-Definition sem_exp (Γ : ctx) (t1 t2 : exp) (T : typ) : Prop :=
-  forall (ρ1 ρ2 : env),
-    ρ1 ≈ ρ2 ∈ ⟦ Γ ⟧Γ ->
-    (forall (σ : nat -> exp) ρ1',
-        ⟦ σ ⟧s ρ1 ↘ ρ1' ->
-        exists a1 a2,
-          ⟦ t1 ⟧ ρ1' ↘ a1 /\ ⟦ t2[σ] ⟧ ρ2 ↘ a2 /\ a1 ≈ a2 ∈ ⟦ T ⟧T) /\
-    (forall (σ : nat -> exp) ρ2',
-        ⟦ σ ⟧s ρ2 ↘ ρ2' ->
-        exists a1 a2,
-          ⟦ t1[σ] ⟧ ρ1 ↘ a1 /\ ⟦ t2 ⟧ ρ2' ↘ a2 /\ a1 ≈ a2 ∈ ⟦ T ⟧T).
+Module SemExp0.
+  Definition sem_exp (Γ : ctx) (t t' : exp) (T : typ) : Prop := 
+    forall ρ ρ', 
+      ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ -> 
+      exists a a', ⟦ t ⟧ ρ ↘ a /\ ⟦ t' ⟧ ρ' ↘ a' /\ a ≈ a' ∈ ⟦ T ⟧T.
 
+  Notation "Γ ⊨ t ≈ t' : T" := (sem_exp Γ t t' T) 
+    (at level 55, t at next level, t' at next level, no associativity).
 
-Notation "Γ ⊨ t ≈ t' : T" := (sem_exp Γ t t' T) 
-  (at level 55, t at next level, t' at next level, no associativity).
+  Lemma sem_eq_exp_symm : forall Γ t t' T,
+    Γ ⊨ t ≈ t' : T ->
+    Γ ⊨ t' ≈ t : T.
+  Proof.
+    intros. unfold sem_exp in *. intros.
+    apply sem_env_symm in H0.
+    eapply H in H0.
+    firstorder. sauto use:sem_typ_symm.
+  Qed.
 
-Notation "Γ ⊨' t ≈ t' : T" := (sem_exp' Γ t t' T) 
-  (at level 55, t at next level, t' at next level, no associativity).
-
-Lemma sem_eq_exp_symm : forall Γ t t' T,
-  Γ ⊨ t ≈ t' : T ->
-  Γ ⊨ t' ≈ t : T.
-Proof.
-  intros. unfold sem_exp in *. intros.
-  apply sem_env_symm in H0.
-  eapply H in H0.
-  firstorder.
-  - specialize (H1 _ _ H2). firstorder.
-    repeat eexists; sauto use:sem_typ_symm limit:50.
-  - specialize (H0 _ _ H2). firstorder.
-    repeat eexists; sauto use:sem_typ_symm limit:50.
-Qed.
-
-(* Lemma sem_exp_trans : forall Γ t1 t2 t3 T, *)
-(*   Γ ⊨ t1 ≈ t2 : T -> *)
-(*   Γ ⊨ t2 ≈ t3 : T -> *)
-(*   Γ ⊨ t1 ≈ t3 : T. *)
-(* Proof. *)
-(*   intros. unfold sem_exp in *. intros. *)
-(*   apply H in H1 as IH1. *)
-(*   apply sem_env_symm in H1 as H1'. *)
-(*   apply sem_env_refl in H1'. *)
-(*   apply H0 in H1' as IH2. *)
-(*   destruct IH1 as [[a1 [a2]] []]. *)
-(*   destruct IH2 as [[a2' [a3]] []]. intuition. *)
-(*   eapply eval_det in H2; eauto. subst. *)
-(*   exists a1, a3; intuition; sauto use:sem_typ_trans. *)
-(* Qed. *)
-
-(* Unset Printing Notations. *)
-
-
-Lemma sem_eq_exp_abs : forall Γ t t' S T,
-  (S :: Γ) ⊨ t ≈ t' : T ->
-  Γ ⊨ (λ t) ≈ (λ t') : S → T.
-Proof.
-  intros. unfold sem_exp in *; intros.
-  split.
-  - intros. asimpl.
+  (* for the old sem_exp def, congruence is trivial *)
+  Lemma sem_eq_cong_abs : forall Γ t t' S T,
+    (S :: Γ) ⊨ t ≈ t' : T ->
+    Γ ⊨ (λ t) ≈ (λ t') : S → T.
+  Proof.
+    intros. unfold sem_exp in *; intros.
     do 2 eexists. split; [econstructor | split]; [econstructor |].
-    intros a a' ?.
-    assert (ρ1 ↦ a ≈ ρ2 ↦ a' ∈ ⟦ S :: Γ ⟧Γ). {
+    simpl. unfold sem_arr. intros.
+    assert (ρ ↦ a ≈ ρ' ↦ a' ∈ ⟦ S :: Γ ⟧Γ). {
       intros i n ?.
       destruct i; simpl; sauto.
     }
-    specialize (H _ _ H3) as [].
-    assert (⟦  0 __exp .: (σ ∘ ⟨↑⟩) ⟧s ρ1 ↦ a ↘ ρ1' ↦ a). {
-      intros i b ?. destruct i; simpl in *.
-      - dependent destruction H5. auto.
-      - admit.
-    }
-    specialize (H _ _ H5) as [a1 [a2 [? []]]].
-    sauto.
-  - admit.
-Admitted.
+    apply H in H2. sauto. 
+  Qed.
+
+  Lemma sem_eq_beta_abs : forall Γ t s S T,
+    Γ ⊨ t ≈ t : S → T ->
+    Γ ⊨ s ≈ s : S ->
+    Γ ⊨ (λ t) ▫ s ≈ t[s..] : T.
+  Proof.
+  Admitted.
+
+  Lemma sem_eq_eta_abs : forall Γ t S T,
+    Γ ⊨ t ≈ t : S → T ->
+    Γ ⊢ t ≈ (λ (t⟨↑⟩ ▫ (exp_var 0))) : S → T.
+  Proof.
+  Admitted.
+
+End SemExp0.
+
+Module SemExp1.
+  Definition sem_exp (Γ : ctx) (t1 t2 : exp) (T : typ) : Prop :=
+    forall (ρ1 ρ2 : env),
+      ρ1 ≈ ρ2 ∈ ⟦ Γ ⟧Γ ->
+      (forall (σ : nat -> exp) ρ1',
+          ⟦ σ ⟧s ρ1 ↘ ρ1' ->
+          exists a1 a2,
+            ⟦ t1 ⟧ ρ1' ↘ a1 /\ ⟦ t2[σ] ⟧ ρ2 ↘ a2 /\ a1 ≈ a2 ∈ ⟦ T ⟧T) /\
+      (forall (σ : nat -> exp) ρ2',
+          ⟦ σ ⟧s ρ2 ↘ ρ2' ->
+          exists a1 a2,
+            ⟦ t1[σ] ⟧ ρ1 ↘ a1 /\ ⟦ t2 ⟧ ρ2' ↘ a2 /\ a1 ≈ a2 ∈ ⟦ T ⟧T).
+
+  Notation "Γ ⊨ t ≈ t' : T" := (sem_exp Γ t t' T) 
+    (at level 55, t at next level, t' at next level, no associativity).
+
+  Lemma sem_eq_exp_symm : forall Γ t t' T,
+    Γ ⊨ t ≈ t' : T ->
+    Γ ⊨ t' ≈ t : T.
+  Proof.
+    intros. unfold sem_exp in *. intros.
+    apply sem_env_symm in H0.
+    eapply H in H0.
+    firstorder.
+    - specialize (H1 _ _ H2). firstorder.
+      repeat eexists; sauto use:sem_typ_symm limit:50.
+    - specialize (H0 _ _ H2). firstorder.
+      repeat eexists; sauto use:sem_typ_symm limit:50.
+  Qed.
+
+  Lemma sem_eq_cong_abs : forall Γ t t' S T,
+    (S :: Γ) ⊨ t ≈ t' : T ->
+    Γ ⊨ (λ t) ≈ (λ t') : S → T.
+  Proof.
+    intros. unfold sem_exp in *; intros.
+    split.
+    - intros. asimpl.
+      do 2 eexists. split; [econstructor | split]; [econstructor |].
+      intros a a' ?.
+      assert (ρ1 ↦ a ≈ ρ2 ↦ a' ∈ ⟦ S :: Γ ⟧Γ). {
+        intros i n ?.
+        destruct i; simpl; sauto.
+      }
+      specialize (H _ _ H3) as [].
+      assert (⟦  0 __exp .: (σ ∘ ⟨↑⟩) ⟧s ρ1 ↦ a ↘ ρ1' ↦ a). {
+        intros i b ?. destruct i; simpl in *.
+        - dependent destruction H5. auto.
+        - admit.
+      }
+      specialize (H _ _ H5) as [a1 [a2 [? []]]].
+      sauto.
+    - intros. admit.
+  Admitted.
+
+  Lemma sem_eq_beta_abs : forall Γ t s S T,
+    Γ ⊨ t ≈ t : S → T ->
+    Γ ⊨ s ≈ s : S ->
+    Γ ⊨ (λ t) ▫ s ≈ t[s..] : T.
+  Proof.
+  Admitted.
+
+  Lemma sem_eq_eta_abs : forall Γ t S T,
+    Γ ⊨ t ≈ t : S → T ->
+    Γ ⊢ t ≈ (λ (t⟨↑⟩ ▫ (exp_var 0))) : S → T.
+  Proof.
+  Admitted.
+
+End SemExp1.
