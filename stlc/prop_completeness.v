@@ -356,6 +356,14 @@ substitution in `sem_exp` defs here. if that's true,
 we have many more proof obligations to deal with.
 *)
 Module SemExp1.
+  (* I think this cannot be true
+     we must use type-preserving substitution,
+     suppose Γ, Bool ⊢ var 0 : Bool
+     σ = (↑,zero)
+     then ⟦ var 0[σ] ⟧ ρ ↘ zero, and zero ≈ zero ∈ ⟦ Nat ⟧
+     this PER model would give us
+     Γ, Bool ⊢ var 0 ≈ var 0 : Nat
+  *)
   Definition sem_exp (Γ : ctx) (t1 t2 : exp) (T : typ) : Prop :=
     forall (ρ1 ρ2 : env),
       ρ1 ≈ ρ2 ∈ ⟦ Γ ⟧Γ ->
