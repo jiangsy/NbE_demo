@@ -278,6 +278,18 @@ Module SemExp0.
   Notation "Γ ⊨ t : T" := (sem_exp Γ t t T) 
     (at level 55, t at next level, no associativity).
 
+  (* feel like `sem_closure_inversion` in a useful prop, 
+     as it always allow as to reapply the eta rule to get
+     rid of the closure by applying an additional argument 
+  *)
+  Lemma sem_closure_inversion : forall t ρ a T,
+    (ƛ t) ρ ≈ a ∈ ⟦ T ⟧T ->
+    exists S' T', T = S' → T'.
+  Proof.
+    intros. destruct T; eauto.
+    - simpl in H. dependent destruction H.
+  Qed.
+
   Lemma eval_subst_prop : forall ρ t σ a ρ',
     ⟦ t[σ] ⟧ ρ ↘ a ->
     ⟦ σ ⟧s ρ ↘ ρ' ->
@@ -291,12 +303,19 @@ Module SemExp0.
       admit. 
   Abort.
 
-  Lemma eval_subst_prop : forall ρ t σ a ρ',
+  Lemma eval_subst_prop : forall T ρ t σ a ρ',
+    (* how to deal with this T *)
+    a ≈ a ∈ ⟦ T ⟧T ->
+    (* this is not true, we need type-preserving substitution *)
     ⟦ t[σ] ⟧ ρ ↘ a ->
     ⟦ σ ⟧s ρ ↘ ρ' ->
-    (* can we use exists T here? *)
-    exists a' T, ⟦ t ⟧ ρ' ↘ a' /\ a ≈ a' ∈ ⟦ T ⟧T.
+    exists a', ⟦ t ⟧ ρ' ↘ a' /\ a ≈ a' ∈ ⟦ T ⟧T.
   Proof.
+    intros. gen T a σ ρ. induction t; asimpl; try sauto limit:50; intros.
+    - apply H1 in H0. eexists; sauto.
+    - admit.
+    - dependent destruction H0.
+      admit.
   Abort.
 
   Lemma sem_eq_exp_symm : forall Γ t t' T,
