@@ -334,7 +334,7 @@ Proof.
       destruct i; simpl; sauto.
     }
     specialize (H _ _ H3) as [].
-    assert (⟦ scons (exp_var 0) (funcomp (ren_exp shift) σ) ⟧s ρ1 ↦ a ↘ ρ1' ↦ a). {
+    assert (⟦  0 __exp .: (σ ∘ ⟨↑⟩) ⟧s ρ1 ↦ a ↘ ρ1' ↦ a). {
       intros i b ?. destruct i; simpl in *.
       - dependent destruction H5. auto.
       - admit.
