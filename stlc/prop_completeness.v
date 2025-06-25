@@ -273,12 +273,12 @@ Import UnscopedNotations.
 Definition sem_exp (Γ : ctx) (t1 t2 : exp) (T : typ) : Prop := 
   forall (ρ1 ρ2  : env) ,
     ρ1 ≈ ρ2 ∈ ⟦ Γ ⟧Γ -> 
-    exists a1 a2,
-    ⟦ t1 ⟧ ρ1 ↘ a1 /\ ⟦ t2 ⟧ ρ2 ↘ a2 /\ a1 ≈ a2 ∈ ⟦ T ⟧T /\
-    forall (σ : nat -> exp) ρ1' ρ2', 
-    ⟦ σ ⟧s ρ1 ↘ ρ1' -> ⟦ σ ⟧s ρ2 ↘ ρ2' ->
-    (forall a1' a1'', ⟦ t1[σ] ⟧ ρ1 ↘ a1' -> ⟦ t1 ⟧ ρ1' ↘ a1'' -> a1' ≈ a1'' ∈ ⟦ T ⟧T) /\
-    (forall a2' a2'', ⟦ t2[σ] ⟧ ρ2 ↘ a2' -> ⟦ t2 ⟧ ρ2' ↘ a2'' -> a2' ≈ a2'' ∈ ⟦ T ⟧T).
+    (exists a1 a2,
+        ⟦ t1 ⟧ ρ1 ↘ a1 /\ ⟦ t2 ⟧ ρ2 ↘ a2 /\ a1 ≈ a2 ∈ ⟦ T ⟧T) /\
+      (forall (σ : nat -> exp) ρ1',
+          ⟦ σ ⟧s ρ1 ↘ ρ1' -> exists a1' a1'', ⟦ t1[σ] ⟧ ρ1 ↘ a1' /\ ⟦ t1 ⟧ ρ1' ↘ a1'' /\ a1' ≈ a1'' ∈ ⟦ T ⟧T) /\
+      (forall (σ : nat -> exp) ρ2' ,
+          ⟦ σ ⟧s ρ2 ↘ ρ2' -> exists a2' a2'', ⟦ t2[σ] ⟧ ρ2 ↘ a2' /\ ⟦ t2 ⟧ ρ2' ↘ a2'' /\ a2' ≈ a2'' ∈ ⟦ T ⟧T).
 
 Notation "Γ ⊨ t ≈ t' : T" := (sem_exp Γ t t' T) 
   (at level 55, t at next level, t' at next level, no associativity).
@@ -302,7 +302,8 @@ Lemma sem_eq_exp_symm : forall Γ t t' T,
 Proof.
   intros. unfold sem_exp in *. intros.
   apply sem_env_symm in H0.
-  eapply H in H0. destruct H0 as [a [a']]. 
+  eapply H in H0. destruct H0 as [[a [a']] []].
+  firstorder.
   exists a', a. sauto use:sem_typ_symm limit:50.
 Qed.
 
@@ -316,8 +317,43 @@ Proof.
   apply sem_env_symm in H1 as H1'.
   apply sem_env_refl in H1'.
   apply H0 in H1' as IH2.
-  destruct IH1 as [a1 [a2]].
-  destruct IH2 as [a2' [a3]]. intuition.
+  destruct IH1 as [[a1 [a2]] []].
+  destruct IH2 as [[a2' [a3]] []]. intuition.
   eapply eval_det in H2; eauto. subst.
   exists a1, a3; intuition; sauto use:sem_typ_trans.
 Qed.
+
+(* Unset Printing Notations. *)
+
+
+Lemma sem_eq_exp_abs : forall Γ t t' S T,
+  (S :: Γ) ⊨ t ≈ t' : T ->
+  Γ ⊨ (λ t) ≈ (λ t') : S → T.
+Proof.
+  intros. unfold sem_exp in *; intros.
+  repeat split.
+  - do 2 eexists. split; [econstructor | split]; [econstructor |].
+    intros a a' ?.
+    assert (ρ1 ↦ a ≈ ρ2 ↦ a' ∈ ⟦ S :: Γ ⟧Γ). {
+      intros i n ?.
+      destruct i; simpl; sauto.
+    }
+    specialize (H _ _ H2) as [[a1 [a2]] []].
+    exists a1, a2. sauto.
+  - intros.
+    asimpl.
+    do 2 eexists. split; [econstructor | split]; [econstructor |].
+    intros a a' ?.
+    assert (ρ1 ↦ a ≈ ρ2 ↦ a' ∈ ⟦ S :: Γ ⟧Γ). {
+      intros i n ?.
+      destruct i; simpl; sauto.
+    }
+    specialize (H _ _ H3) as [[a1 [a2 [? []]]] []].
+    assert (⟦ scons (exp_var 0) (funcomp (ren_exp shift) σ) ⟧s ρ1 ↦ a ↘ ρ1' ↦ a). {
+      intros i b ?. destruct i; simpl in *.
+      - dependent destruction H8. auto.
+      - admit.
+    }
+    specialize (H6 _ _ H8) as [a1' [a1'' [? []]]].
+    exists a1', a1''. firstorder.
+    sauto.
